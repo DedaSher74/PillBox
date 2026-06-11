@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Умная Таблеточница</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+            text-align: center;
+        }
+        h2 {
+            font-size: 1.2rem;
+            color: #34495e;
+            margin-top: 0;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 8px;
+        }
+        .status {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+        .status span {
+            font-weight: bold;
+        }
+        .weight-display {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2980b9;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .weight-unit {
+            font-size: 1.5rem;
+            color: #7f8c8d;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Шапка статуса -->
+    <div class="card">
+        <h1>Панель управления</h1>
+        <div class="status">Очередь связи: <span id="db-status" style="color: #e67e22;">Ожидание настройки базы...</span></div>
+    </div>
+
+    <!-- Блок весов -->
+    <div class="card">
+        <h2>Текущий вес</h2>
+        <div class="weight-display"><span id="weight-val">0.0</span> <span class="weight-unit">г</span></div>
+        <button id="btn-tare" class="btn-danger">Тара (Сбросить в 0)</button>
+    </div>
+
+    <!-- Блок будильников -->
+    <div class="card">
+        <h2>Будильники приема</h2>
+        <div class="input-group">
+            <label for="alarm1">Утренний прием:</label>
+            <input type="time" id="alarm1" value="08:00">
+        </div>
+        <div class="input-group">
+            <label for="alarm2">Вечерний прием:</label>
+            <input type="time" id="alarm2" value="20:00">
+        </div>
+        <button id="btn-save-alarms">Сохранить время</button>
+    </div>
+
+    <!-- Блок контактов для SMS -->
+    <div class="card">
+        <h2>Настройки оповещений</h2>
+        <div class="input-group">
+            <label for="phone-num">Номер телефона для SMS:</label>
+            <input type="tel" id="phone-num" placeholder="+79991234567">
+        </div>
+        <button id="btn-save-phone">Сохранить контакт</button>
+    </div>
+
+</div>
+
+<script>
+    // На данном этапе это демонстрационные обработчики.
+    // На следующем шаге мы подключим сюда реальную базу данных Firebase.
+    
+    document.getElementById('btn-tare').onclick = function() {
+        alert('Команда "Тара" отправлена в буфер. База данных еще не подключена.');
+    };
+    
+    document.getElementById('btn-save-alarms').onclick = function() {
+        const a1 = document.getElementById('alarm1').value;
+        const a2 = document.getElementById('alarm2').value;
+        alert('Время сохранено локально: ' + a1 + ' и ' + a2);
+    };
+
+    document.getElementById('btn-save-phone').onclick = function() {
+        const phone = document.getElementById('phone-num').value;
+        alert('Номер телефона сохранен локально: ' + phone);
+    };
+</script>
+
+</body>
+</html>

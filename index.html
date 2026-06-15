@@ -3,166 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Умная Таблеточница</title>
+    <title>Умная Таблеточница - Панель управления</title>
+    <!-- Подключаем библиотеки Firebase v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+        :root {
+            --bg-color: #f0f2f5; --card-bg: #ffffff; --text-color: #333333;
+            --primary-color: #007bff; --success-color: #28a745; --pending-color: #dc3545;
         }
-        .container {
-            width: 100%;
-            max-width: 500px;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        h1 {
-            font-size: 1.5rem;
-            color: #2c3e50;
-            margin: 0 0 10px 0;
-            text-align: center;
-        }
-        h2 {
-            font-size: 1.2rem;
-            color: #34495e;
-            margin-top: 0;
-            border-bottom: 2px solid #ecf0f1;
-            padding-bottom: 8px;
-        }
-        .status {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-bottom: 10px;
-        }
-        .status span {
-            font-weight: bold;
-        }
-        .weight-display {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #2980b9;
-            text-align: center;
-            margin: 15px 0;
-        }
-        .weight-unit {
-            font-size: 1.5rem;
-            color: #7f8c8d;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        button:active {
-            transform: scale(0.98);
-        }
-        .btn-danger {
-            background-color: #e74c3c;
-        }
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-        .input-group {
-            margin-bottom: 15px;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 1rem;
-        }
+        body { font-family: system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; }
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { font-size: 24px; margin: 0 0 8px 0; color: var(--primary-color); }
+        .time-box { font-size: 14px; color: #666; }
+        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 16px; margin: 0 0 12px 0; text-transform: uppercase; color: #666; }
+        .weight-display { font-size: 48px; font-weight: 700; text-align: center; margin: 10px 0; }
+        .alarm-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .alarm-item:last-child { border-bottom: none; }
+        .alarm-time { font-size: 18px; font-weight: 600; }
+        .status { font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
+        .status.taken { background-color: rgba(40,167,69,0.1); color: var(--success-color); }
+        .status.pending { background-color: rgba(220,53,69,0.1); color: var(--pending-color); }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        input[type="text"] { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; }
+        .btn { display: block; width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
+        .btn:disabled { background-color: #a0cfff !important; cursor: not-allowed; }
+        .btn-secondary { background-color: #6c757d; margin-top: 12px; }
+        #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 14px; position: fixed; z-index: 999; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: opacity 0.2s linear; opacity: 0; }
+        #toast.show { visibility: visible; opacity: 1; }
     </style>
 </head>
 <body>
-
-<div class="container">
-    
-    <!-- Шапка статуса -->
-    <div class="card">
-        <h1>Панель управления</h1>
-        <div class="status">Очередь связи: <span id="db-status" style="color: #e67e22;">Ожидание настройки базы...</span></div>
-    </div>
-
-    <!-- Блок весов -->
-    <div class="card">
-        <h2>Текущий вес</h2>
-        <div class="weight-display"><span id="weight-val">0.0</span> <span class="weight-unit">г</span></div>
-        <button id="btn-tare" class="btn-danger">Тара (Сбросить в 0)</button>
-    </div>
-
-    <!-- Блок будильников -->
-    <div class="card">
-        <h2>Будильники приема</h2>
-        <div class="input-group">
-            <label for="alarm1">Утренний прием:</label>
-            <input type="time" id="alarm1" value="08:00">
+    <div class="container">
+        <header>
+            <h1>Таблеточница v6.4 (Облако)</h1>
+            <div class="time-box">Системное время устройства: <span id="time">--:--:--</span></div>
+        </header>
+        <div class="card">
+            <h2>Текущий вес таблеток</h2>
+            <div class="weight-display" id="weight">0.00 г</div>
         </div>
-        <div class="input-group">
-            <label for="alarm2">Вечерний прием:</label>
-            <input type="time" id="alarm2" value="20:00">
+        <div class="card">
+            <h2>Статус будильников</h2>
+            <div id="alarms-list">
+                <div class="alarm-item"><span class="alarm-time" id="alarmTime0">--:--</span><span class="status pending" id="status0">Загрузка</span></div>
+                <div class="alarm-item"><span class="alarm-time" id="alarmTime1">--:--</span><span class="status pending" id="status1">Загрузка</span></div>
+                <div class="alarm-item"><span class="alarm-time" id="alarmTime2">--:--</span><span class="status pending" id="status2">Загрузка</span></div>
+            </div>
         </div>
-        <button id="btn-save-alarms">Сохранить время</button>
-    </div>
-
-    <!-- Блок контактов для SMS -->
-    <div class="card">
-        <h2>Настройки оповещений</h2>
-        <div class="input-group">
-            <label for="phone-num">Номер телефона для SMS:</label>
-            <input type="tel" id="phone-num" placeholder="+79991234567">
+        <div class="card">
+            <h2>Номера СМС</h2>
+            <div class="input-group">
+                <input type="text" id="phoneInput1" placeholder="+70000000000">
+                <input type="text" id="phoneInput2" placeholder="+70000000000">
+                <input type="text" id="phoneInput3" placeholder="+70000000000">
+                <button class="btn btn-secondary" id="saveBtn" onclick="savePhones()">Сохранить контакты</button>
+            </div>
         </div>
-        <button id="btn-save-phone">Сохранить контакт</button>
+        <button style="margin-top:16px;" class="btn" id="tareBtn" onclick="triggerTare()">Сбросить Тару (Ноль)</button>
     </div>
-
-</div>
-
-<script>
-    // На данном этапе это демонстрационные обработчики.
-    // На следующем шаге мы подключим сюда реальную базу данных Firebase.
     
-    document.getElementById('btn-tare').onclick = function() {
-        alert('Команда "Тара" отправлена в буфер. База данных еще не подключена.');
-    };
-    
-    document.getElementById('btn-save-alarms').onclick = function() {
-        const a1 = document.getElementById('alarm1').value;
-        const a2 = document.getElementById('alarm2').value;
-        alert('Время сохранено локально: ' + a1 + ' и ' + a2);
-    };
+    <div id="toast">Уведомление</div>
 
-    document.getElementById('btn-save-phone').onclick = function() {
-        const phone = document.getElementById('phone-num').value;
-        alert('Номер телефона сохранен локально: ' + phone);
-    };
-</script>
+    <script>
+        // === НАСТРОЙКИ ВАШЕГО FIREBASE ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyACXylsaUdFHPQe8Ekju07o29_SU9w2Vsk",
+            databaseURL: "https://pillbox-20842-default-rtdb.firebaseio.com"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
+        function showToast(msg) {
+            let toast = document.getElementById("toast");
+            toast.innerText = msg; toast.className = "show";
+            setTimeout(() => { toast.className = ""; }, 2500);
+        }
+
+        // Автоматическое получение статуса при любых изменениях в облаке
+        database.ref('pillbox/status').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
+            document.getElementById('time').innerText = data.time || '--:--:--';
+
+            for (let i = 0; i < 3; i++) {
+                if (data.alarms && data.alarms[i]) {
+                    document.getElementById('alarmTime' + i).innerText = data.alarms[i].time;
+                    let st = document.getElementById('status' + i);
+                    if (data.alarms[i].taken) {
+                        st.innerText = 'Принято'; st.className = 'status taken';
+                    } else {
+                        st.innerText = 'Ожидает'; st.className = 'status pending';
+                    }
+                }
+            }
+
+            if (document.activeElement !== document.getElementById('phoneInput1')) document.getElementById('phoneInput1').value = data.phone1 || '';
+            if (document.activeElement !== document.getElementById('phoneInput2')) document.getElementById('phoneInput2').value = data.phone2 || '';
+            if (document.activeElement !== document.getElementById('phoneInput3')) document.getElementById('phoneInput3').value = data.phone3 || '';
+        });
+
+        // Отправка команды Тары
+        function triggerTare() {
+            let btn = document.getElementById('tareBtn');
+            btn.innerText = "Отправка команды..."; btn.disabled = true;
+            
+            database.ref('pillbox/commands').set({
+                action: "tare",
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Команда обнуления весов отправлена!");
+                btn.innerText = "Сбросить Тару (Ноль)"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка сети при отправке");
+                btn.innerText = "Сбросить Тару (Ноль)"; btn.disabled = false;
+            });
+        }
+
+        // Отправка новых номеров
+        function savePhones() {
+            let btn = document.getElementById('saveBtn');
+            btn.innerText = "Сохранение..."; btn.disabled = true;
+            
+            const p1 = document.getElementById('phoneInput1').value.replace(/\s+/g, '');
+            const p2 = document.getElementById('phoneInput2').value.replace(/\s+/g, '');
+            const p3 = document.getElementById('phoneInput3').value.replace(/\s+/g, '');
+
+            database.ref('pillbox/commands').set({
+                action: "save_phones",
+                p1: p1,
+                p2: p2,
+                p3: p3,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Контакты успешно сохранены в облаке!");
+                btn.innerText = "Сохранить контакты"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка сохранения");
+                btn.innerText = "Сохранить контакты"; btn.disabled = false;
+            });
+        }
+    </script>
 </body>
 </html>

@@ -23,7 +23,10 @@
         .weight-display { font-size: 48px; font-weight: 700; text-align: center; margin: 10px 0; }
         .alarm-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
         .alarm-item:last-child { border-bottom: none; }
-        .alarm-time { font-size: 18px; font-weight: 600; }
+        .alarm-inputs-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+        .alarm-row { display: flex; align-items: center; justify-content: space-between; }
+        .alarm-label { font-size: 16px; font-weight: 600; }
+        input[type="time"] { padding: 8px 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; font-family: inherit; }
         .status { font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
         .status.taken { background-color: rgba(40,167,69,0.1); color: var(--success-color); }
         .status.pending { background-color: rgba(220,53,69,0.1); color: var(--pending-color); }
@@ -39,21 +42,37 @@
 <body>
     <div class="container">
         <header>
-            <h1>Таблеточница v6.4 (Облако)</h1>
-            <div class="time-box">Системное время устройства: <span id="time">--:--:--</span></div>
+            <h1>Таблеточница v6.5 (Облако)</h1>
+            <div class="time-box">Время устройства: <span id="time">--:--:--</span></div>
         </header>
+        
         <div class="card">
             <h2>Текущий вес таблеток</h2>
             <div class="weight-display" id="weight">0.00 г</div>
         </div>
+        
         <div class="card">
-            <h2>Статус будильников</h2>
-            <div id="alarms-list">
-                <div class="alarm-item"><span class="alarm-time" id="alarmTime0">--:--</span><span class="status pending" id="status0">Загрузка</span></div>
-                <div class="alarm-item"><span class="alarm-time" id="alarmTime1">--:--</span><span class="status pending" id="status1">Загрузка</span></div>
-                <div class="alarm-item"><span class="alarm-time" id="alarmTime2">--:--</span><span class="status pending" id="status2">Загрузка</span></div>
+            <h2>Настройка будильников</h2>
+            <div class="alarm-inputs-group">
+                <div class="alarm-row">
+                    <span class="alarm-label">Прием 1:</span>
+                    <input type="time" id="alarmInput0">
+                    <span class="status pending" id="status0">--</span>
+                </div>
+                <div class="alarm-row">
+                    <span class="alarm-label">Прием 2:</span>
+                    <input type="time" id="alarmInput1">
+                    <span class="status pending" id="status1">--</span>
+                </div>
+                <div class="alarm-row">
+                    <span class="alarm-label">Прием 3:</span>
+                    <input type="time" id="alarmInput2">
+                    <span class="status pending" id="status2">--</span>
+                </div>
             </div>
+            <button class="btn" id="saveAlarmsBtn" onclick="saveAlarms()">Сохранить время будильников</button>
         </div>
+        
         <div class="card">
             <h2>Номера СМС</h2>
             <div class="input-group">
@@ -63,7 +82,8 @@
                 <button class="btn btn-secondary" id="saveBtn" onclick="savePhones()">Сохранить контакты</button>
             </div>
         </div>
-        <button style="margin-top:16px;" class="btn" id="tareBtn" onclick="triggerTare()">Сбросить Тару (Ноль)</button>
+        
+        <button style="margin-top:16px;" class="btn btn-secondary" id="tareBtn" onclick="triggerTare()">Сбросить Тару (Ноль)</button>
     </div>
     
     <div id="toast">Уведомление</div>
@@ -84,7 +104,7 @@
             setTimeout(() => { toast.className = ""; }, 2500);
         }
 
-        // Автоматическое получение статуса при любых изменениях в облаке
+        // Получение статуса в реальном времени
         database.ref('pillbox/status').on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -94,7 +114,12 @@
 
             for (let i = 0; i < 3; i++) {
                 if (data.alarms && data.alarms[i]) {
-                    document.getElementById('alarmTime' + i).innerText = data.alarms[i].time;
+                    // Обновляем поля времени только если пользователь сейчас не редактирует их
+                    const input = document.getElementById('alarmInput' + i);
+                    if (document.activeElement !== input) {
+                        input.value = data.alarms[i].time;
+                    }
+                    
                     let st = document.getElementById('status' + i);
                     if (data.alarms[i].taken) {
                         st.innerText = 'Принято'; st.className = 'status taken';
@@ -108,6 +133,36 @@
             if (document.activeElement !== document.getElementById('phoneInput2')) document.getElementById('phoneInput2').value = data.phone2 || '';
             if (document.activeElement !== document.getElementById('phoneInput3')) document.getElementById('phoneInput3').value = data.phone3 || '';
         });
+
+        // Отправка новых настроек времени будильников в облако
+        function saveAlarms() {
+            let btn = document.getElementById('saveAlarmsBtn');
+            btn.innerText = "Отправка настроек..."; btn.disabled = true;
+
+            const a0 = document.getElementById('alarmInput0').value;
+            const a1 = document.getElementById('alarmInput1').value;
+            const a2 = document.getElementById('alarmInput2').value;
+
+            if (!a0 || !a1 || !a2) {
+                showToast("Пожалуйста, заполните время для всех будильников");
+                btn.innerText = "Сохранить время будильников"; btn.disabled = false;
+                return;
+            }
+
+            database.ref('pillbox/commands').set({
+                action: "save_alarms",
+                a0: a0,
+                a1: a1,
+                a2: a2,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Новые будильники отправлены на устройство!");
+                btn.innerText = "Сохранить время будильников"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка при сохранении");
+                btn.innerText = "Сохранить время будильников"; btn.disabled = false;
+            });
+        }
 
         // Отправка команды Тары
         function triggerTare() {
@@ -126,7 +181,7 @@
             });
         }
 
-        // Отправка новых номеров
+        // Отправка новых номеров телефонов
         function savePhones() {
             let btn = document.getElementById('saveBtn');
             btn.innerText = "Сохранение..."; btn.disabled = true;

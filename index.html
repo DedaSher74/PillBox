@@ -35,6 +35,8 @@
         .btn { display: block; width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
         .btn:disabled { background-color: #a0cfff !important; cursor: not-allowed; }
         .btn-secondary { background-color: #6c757d; margin-top: 12px; }
+        .checkbox-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 15px; }
+        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
         #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 14px; position: fixed; z-index: 999; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: opacity 0.2s linear; opacity: 0; }
         #toast.show { visibility: visible; opacity: 1; }
     </style>
@@ -42,7 +44,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Таблеточница v6.5 (Облако)</h1>
+            <h1>Таблеточница v6.10 (Облако)</h1>
             <div class="time-box">Время устройства: <span id="time">--:--:--</span></div>
         </header>
         
@@ -72,13 +74,36 @@
             </div>
             <button class="btn" id="saveAlarmsBtn" onclick="saveAlarms()">Сохранить время будильников</button>
         </div>
+
+        <!-- === НОВЫЙ БЛОК: СМС НАПОМИНАНИЯ === -->
+        <div class="card">
+            <h2>СМС Напоминания Пациенту</h2>
+            <div class="input-group" style="margin-bottom:16px;">
+                <h3 style="font-size:14px; margin:0; color:#555;">Ручное СМС (на Телефон 1):</h3>
+                <input type="text" id="manualSmsText" value="Не забудь принять таблетку!">
+                <button class="btn" id="sendManualBtn" onclick="sendManualSms()">Отправить СМС сейчас</button>
+            </div>
+            <hr style="border:0; border-top: 1px solid #eee; margin:16px 0;">
+            <div class="input-group">
+                <h3 style="font-size:14px; margin:0; color:#555;">Автоматическое ежедневное СМС:</h3>
+                <div class="alarm-row">
+                    <span>Время отправки:</span>
+                    <input type="time" id="remindTimeInput">
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="remindEnabledInput">
+                    <label for="remindEnabledInput">Включить автонапоминание</label>
+                </div>
+                <button class="btn btn-secondary" id="saveRemindBtn" onclick="saveAutoReminder()">Сохранить настройки автонапоминания</button>
+            </div>
+        </div>
         
         <div class="card">
-            <h2>Номера СМС</h2>
+            <h2>Номера контактов</h2>
             <div class="input-group">
-                <input type="text" id="phoneInput1" placeholder="+70000000000">
-                <input type="text" id="phoneInput2" placeholder="+70000000000">
-                <input type="text" id="phoneInput3" placeholder="+70000000000">
+                <input type="text" id="phoneInput1" placeholder="Телефон 1 (Пациент)">
+                <input type="text" id="phoneInput2" placeholder="Телефон 2 (Куратор)">
+                <input type="text" id="phoneInput3" placeholder="Телефон 3 (Куратор)">
                 <button class="btn btn-secondary" id="saveBtn" onclick="savePhones()">Сохранить контакты</button>
             </div>
         </div>
@@ -114,12 +139,10 @@
 
             for (let i = 0; i < 3; i++) {
                 if (data.alarms && data.alarms[i]) {
-                    // Обновляем поля времени только если пользователь сейчас не редактирует их
                     const input = document.getElementById('alarmInput' + i);
                     if (document.activeElement !== input) {
                         input.value = data.alarms[i].time;
                     }
-                    
                     let st = document.getElementById('status' + i);
                     if (data.alarms[i].taken) {
                         st.innerText = 'Принято'; st.className = 'status taken';
@@ -129,12 +152,64 @@
                 }
             }
 
+            // Обновляем настройки автонапоминания
+            if (document.activeElement !== document.getElementById('remindTimeInput')) {
+                document.getElementById('remindTimeInput').value = data.remindTime || '12:00';
+            }
+            if (document.activeElement !== document.getElementById('remindEnabledInput')) {
+                document.getElementById('remindEnabledInput').checked = data.remindEnabled || false;
+            }
+
             if (document.activeElement !== document.getElementById('phoneInput1')) document.getElementById('phoneInput1').value = data.phone1 || '';
             if (document.activeElement !== document.getElementById('phoneInput2')) document.getElementById('phoneInput2').value = data.phone2 || '';
             if (document.activeElement !== document.getElementById('phoneInput3')) document.getElementById('phoneInput3').value = data.phone3 || '';
         });
 
-        // Отправка новых настроек времени будильников в облако
+        // Отправка ручного СМС-напоминания сейчас
+        function sendManualSms() {
+            let btn = document.getElementById('sendManualBtn');
+            const text = document.getElementById('manualSmsText').value;
+            if (!text) { showToast("Введите текст сообщения!"); return; }
+
+            btn.innerText = "Отправка команды..."; btn.disabled = true;
+
+            database.ref('pillbox/commands').set({
+                action: "send_now_sms",
+                msg: text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Команда отправки СМС передана на устройство!");
+                btn.innerText = "Отправить СМС сейчас"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка отправки команды");
+                btn.innerText = "Отправить СМС сейчас"; btn.disabled = false;
+            });
+        }
+
+        // Сохранение настроек автонапоминания
+        function saveAutoReminder() {
+            let btn = document.getElementById('saveRemindBtn');
+            const time = document.getElementById('remindTimeInput').value;
+            const enabled = document.getElementById('remindEnabledInput').checked;
+
+            if (!time) { showToast("Выберите время автонапоминания!"); return; }
+            btn.innerText = "Сохранение..."; btn.disabled = true;
+
+            database.ref('pillbox/commands').set({
+                action: "save_reminder",
+                time: time,
+                enabled: enabled,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Настройки автонапоминания сохранены!");
+                btn.innerText = "Сохранить настройки автонапоминания"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка сохранения");
+                btn.innerText = "Сохранить настройки автонапоминания"; btn.disabled = false;
+            });
+        }
+
+        // Отправка времени будильников
         function saveAlarms() {
             let btn = document.getElementById('saveAlarmsBtn');
             btn.innerText = "Отправка настроек..."; btn.disabled = true;
@@ -143,12 +218,6 @@
             const a1 = document.getElementById('alarmInput1').value;
             const a2 = document.getElementById('alarmInput2').value;
 
-            if (!a0 || !a1 || !a2) {
-                showToast("Пожалуйста, заполните время для всех будильников");
-                btn.innerText = "Сохранить время будильников"; btn.disabled = false;
-                return;
-            }
-
             database.ref('pillbox/commands').set({
                 action: "save_alarms",
                 a0: a0,
@@ -156,7 +225,7 @@
                 a2: a2,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                showToast("Новые будильники отправлены на устройство!");
+                showToast("Будильники обновлены!");
                 btn.innerText = "Сохранить время будильников"; btn.disabled = false;
             }).catch(() => {
                 showToast("Ошибка при сохранении");
@@ -168,7 +237,6 @@
         function triggerTare() {
             let btn = document.getElementById('tareBtn');
             btn.innerText = "Отправка команды..."; btn.disabled = true;
-            
             database.ref('pillbox/commands').set({
                 action: "tare",
                 timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -181,7 +249,7 @@
             });
         }
 
-        // Отправка новых номеров телефонов
+        // Отправка номеров телефонов
         function savePhones() {
             let btn = document.getElementById('saveBtn');
             btn.innerText = "Сохранение..."; btn.disabled = true;
@@ -192,12 +260,10 @@
 
             database.ref('pillbox/commands').set({
                 action: "save_phones",
-                p1: p1,
-                p2: p2,
-                p3: p3,
+                p1: p1, p2: p2, p3: p3,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                showToast("Контакты успешно сохранены в облаке!");
+                showToast("Контакты сохранены!");
                 btn.innerText = "Сохранить контакты"; btn.disabled = false;
             }).catch(() => {
                 showToast("Ошибка сохранения");

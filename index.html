@@ -234,7 +234,7 @@
         <div class="card">
             <h2>Текущий вес таблеток</h2>
             <div class="weight-display" id="weight">0.00 г</div>
-            <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес (ноль) </button>
+            <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес (Тара) </button>
         </div>
         
         <!-- ДИНАМИЧЕСКИЕ БУДИЛЬНИКИ -->
@@ -329,7 +329,6 @@
 
             // 1. Получение телефонов
             currentPhones = data.phones || [];
-            // Совместимость со старой структурой
             if (currentPhones.length === 0) {
                 if (data.phone1 && data.phone1 !== '+70000000000') currentPhones.push(data.phone1);
                 if (data.phone2 && data.phone2 !== '+70000000000') currentPhones.push(data.phone2);
@@ -376,7 +375,7 @@
             }
         }
 
-        // Отрисовка списка будильников
+        // Отрисовка списка будильников с интерактивным изменением времени
         function renderAlarms() {
             const listDiv = document.getElementById('alarmsList');
             listDiv.innerHTML = '';
@@ -389,16 +388,24 @@
                     const statusText = alarm.taken ? 'Принято' : 'Ожидает';
                     listDiv.innerHTML += `
                         <div class="list-item">
-                            <div>
+                            <div style="gap: 8px;">
                                 <span class="alarm-label">Прием ${idx + 1}:</span>
-                                <span style="font-weight:600; margin-left:10px; font-size:15px;">${alarm.time}</span>
-                                <span class="${statusClass}" style="margin-left: 12px;">${statusText}</span>
+                                <input type="time" value="${alarm.time}" onchange="editAlarmTime(${idx}, this.value)" style="width: auto; padding: 4px 8px; font-size: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-weight: 600; background: #fff;">
+                                <span class="${statusClass}">${statusText}</span>
                             </div>
                             <span class="delete-btn" onclick="deleteAlarm(${idx})">&times;</span>
                         </div>
                     `;
                 });
             }
+        }
+
+        // Инлайновое изменение времени существующего будильника
+        function editAlarmTime(idx, newTime) {
+            if (!newTime) return;
+            currentAlarms[idx].time = newTime;
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            syncAlarms();
         }
 
         // Добавление контакта
@@ -553,10 +560,10 @@
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
                 showToast("Тара обнулена!");
-                btn.innerText = "Сбросить вес (ноль) "; btn.disabled = false;
+                btn.innerText = "Сбросить вес (Тара) "; btn.disabled = false;
             }).catch(() => {
                 showToast("Ошибка сети");
-                btn.innerText = "Сбросить вес (ноль) "; btn.disabled = false;
+                btn.innerText = "Сбросить вес (Тара) "; btn.disabled = false;
             });
         }
     </script>

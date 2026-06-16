@@ -67,6 +67,7 @@
             color: #222;
         }
         
+        /* Списки элементов (будильники и контакты) */
         .list-item {
             display: flex;
             justify-content: space-between;
@@ -148,6 +149,7 @@
             flex-grow: 1;
         }
 
+        /* Кнопки */
         .btn { 
             display: inline-flex; 
             align-items: center; 
@@ -191,7 +193,15 @@
             height: 20px; 
             cursor: pointer; 
         }
+        
+        .limit-note {
+            font-size: 12px;
+            color: var(--pending-color);
+            margin: 4px 0 0 0;
+            display: none;
+        }
 
+        /* Анимация раскрытия автонапоминания */
         #reminderConfig {
             display: none;
             border-top: 1px dashed var(--border-color);
@@ -226,15 +236,15 @@
 <body>
     <div class="container">
         <header>
-            <h1>Таблеточница v7.0 (Облако)</h1>
+            <h1>Таблеточница v6.10 (Облако)</h1>
             <div class="time-box">Время устройства: <span id="time">--:--:--</span></div>
         </header>
         
-        <!-- КАРТОЧКА ВЕСА -->
+        <!-- КАРТОЧКА ВЕСА (Кнопка Тары интегрирована сюда) -->
         <div class="card">
             <h2>Текущий вес таблеток</h2>
             <div class="weight-display" id="weight">0.00 г</div>
-            <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес (Тара) </button>
+            <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить Тару (Ноль)</button>
         </div>
         
         <!-- ДИНАМИЧЕСКИЕ БУДИЛЬНИКИ -->
@@ -247,10 +257,11 @@
                     <input type="time" id="newAlarmInput">
                     <button class="btn btn-sm" id="addAlarmBtn" onclick="addAlarm()">Добавить</button>
                 </div>
+                <p class="limit-note" id="alarmLimitNote">Достигнут лимит в 5 будильников. Удалите один, чтобы добавить новый.</p>
             </div>
         </div>
 
-        <!-- СМС НАПОМИНАНИЯ -->
+        <!-- СМС НАПОМИНАНИЯ (Улучшенный скрываемый блок) -->
         <div class="card">
             <h2>СМС Напоминания Пациенту</h2>
             <div class="input-group" style="margin-bottom:16px;">
@@ -289,6 +300,7 @@
                     <input type="text" id="newPhoneInput" placeholder="+79991234567">
                     <button class="btn btn-sm" id="addContactBtn" onclick="addContact()">Добавить</button>
                 </div>
+                <p class="limit-note" id="contactLimitNote">Достигнут лимит в 3 контакта (1-й: Пациент, 2 и 3: Кураторы).</p>
             </div>
         </div>
     </div>
@@ -307,7 +319,6 @@
 
         let currentPhones = [];
         let currentAlarms = [];
-        let ignoreIncomingUpdatesUntil = 0;
 
         function showToast(msg) {
             let toast = document.getElementById("toast");
@@ -323,24 +334,22 @@
             document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
             document.getElementById('time').innerText = data.time || '--:--:--';
 
-            if (Date.now() < ignoreIncomingUpdatesUntil) {
-                return; 
-            }
-
-            // 1. Получение телефонов
-            currentPhones = data.phones || [];
-            if (currentPhones.length === 0) {
+            // 1. Обработка динамических телефонов
+            currentPhones = [];
+            if (data.phones) {
+                currentPhones = data.phones;
+            } else {
                 if (data.phone1 && data.phone1 !== '+70000000000') currentPhones.push(data.phone1);
                 if (data.phone2 && data.phone2 !== '+70000000000') currentPhones.push(data.phone2);
                 if (data.phone3 && data.phone3 !== '+70000000000') currentPhones.push(data.phone3);
             }
             renderContacts();
 
-            // 2. Получение будильников
+            // 2. Обработка динамических будильников
             currentAlarms = data.alarms || [];
             renderAlarms();
 
-            // 3. Автонапоминание
+            // 3. Обработка автонапоминания
             const enabledCheckbox = document.getElementById('remindEnabledInput');
             if (document.activeElement !== enabledCheckbox) {
                 enabledCheckbox.checked = data.remindEnabled || false;
@@ -373,9 +382,23 @@
                     `;
                 });
             }
+
+            const inputField = document.getElementById('newPhoneInput');
+            const addBtn = document.getElementById('addContactBtn');
+            const note = document.getElementById('contactLimitNote');
+
+            if (currentPhones.length >= 3) {
+                inputField.disabled = true;
+                addBtn.disabled = true;
+                note.style.display = 'block';
+            } else {
+                inputField.disabled = false;
+                addBtn.disabled = false;
+                note.style.display = 'none';
+            }
         }
 
-        // Отрисовка списка будильников с интерактивным изменением времени
+        // Отрисовка списка будильников
         function renderAlarms() {
             const listDiv = document.getElementById('alarmsList');
             listDiv.innerHTML = '';
@@ -388,24 +411,30 @@
                     const statusText = alarm.taken ? 'Принято' : 'Ожидает';
                     listDiv.innerHTML += `
                         <div class="list-item">
-                            <div style="gap: 8px;">
+                            <div>
                                 <span class="alarm-label">Прием ${idx + 1}:</span>
-                                <input type="time" value="${alarm.time}" onchange="editAlarmTime(${idx}, this.value)" style="width: auto; padding: 4px 8px; font-size: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-weight: 600; background: #fff;">
-                                <span class="${statusClass}">${statusText}</span>
+                                <span style="font-weight:600; margin-left:10px; font-size:15px;">${alarm.time}</span>
+                                <span class="${statusClass}" style="margin-left: 12px;">${statusText}</span>
                             </div>
                             <span class="delete-btn" onclick="deleteAlarm(${idx})">&times;</span>
                         </div>
                     `;
                 });
             }
-        }
 
-        // Инлайновое изменение времени существующего будильника
-        function editAlarmTime(idx, newTime) {
-            if (!newTime) return;
-            currentAlarms[idx].time = newTime;
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            syncAlarms();
+            const inputField = document.getElementById('newAlarmInput');
+            const addBtn = document.getElementById('addAlarmBtn');
+            const note = document.getElementById('alarmLimitNote');
+
+            if (currentAlarms.length >= 5) {
+                inputField.disabled = true;
+                addBtn.disabled = true;
+                note.style.display = 'block';
+            } else {
+                inputField.disabled = false;
+                addBtn.disabled = false;
+                note.style.display = 'none';
+            }
         }
 
         // Добавление контакта
@@ -423,16 +452,12 @@
 
             currentPhones.push(phone);
             input.value = '';
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            renderContacts();
             syncPhones();
         }
 
         // Удаление контакта
         function deleteContact(idx) {
             currentPhones.splice(idx, 1);
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            renderContacts();
             syncPhones();
         }
 
@@ -442,9 +467,9 @@
                 list: currentPhones,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                showToast("Список контактов отправлен на устройство!");
+                showToast("Список контактов синхронизирован!");
             }).catch(() => {
-                showToast("Ошибка сохранения");
+                showToast("Ошибка сохранения на сервере");
             });
         }
 
@@ -456,16 +481,12 @@
 
             currentAlarms.push({ time: time, taken: false });
             input.value = '';
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            renderAlarms();
             syncAlarms();
         }
 
         // Удаление будильника
         function deleteAlarm(idx) {
             currentAlarms.splice(idx, 1);
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            renderAlarms();
             syncAlarms();
         }
 
@@ -476,12 +497,13 @@
                 list: timeList,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                showToast("Будильники синхронизированы!");
+                showToast("Будильники обновлены на устройстве!");
             }).catch(() => {
-                showToast("Ошибка сохранения");
+                showToast("Ошибка отправки будильников");
             });
         }
 
+        // Управление видимостью автонапоминания
         function toggleReminderView(userClicked = false) {
             const isChecked = document.getElementById('remindEnabledInput').checked;
             const configDiv = document.getElementById('reminderConfig');
@@ -498,7 +520,6 @@
 
         function disableReminderOnServer() {
             const time = document.getElementById('remindTimeInput').value || '12:00';
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
             database.ref('pillbox/commands').set({
                 action: "save_reminder",
                 time: time,
@@ -516,7 +537,6 @@
 
             if (!time) { showToast("Выберите время автонапоминания!"); return; }
             btn.innerText = "Сохранение..."; btn.disabled = true;
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
 
             database.ref('pillbox/commands').set({
                 action: "save_reminder",
@@ -524,7 +544,7 @@
                 enabled: enabled,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                showToast("Настройки сохранены!");
+                showToast("Настройки автонапоминания сохранены!");
                 btn.innerText = "Сохранить настройки автонапоминания"; btn.disabled = false;
             }).catch(() => {
                 showToast("Ошибка сохранения");
@@ -544,7 +564,7 @@
                 msg: text,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                showToast("Запрос отправлен!");
+                showToast("Запрос отправки СМС ушел на таблеточницу!");
                 btn.innerText = "Отправить"; btn.disabled = false;
             }).catch(() => {
                 showToast("Ошибка соединения");
@@ -560,10 +580,10 @@
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
                 showToast("Тара обнулена!");
-                btn.innerText = "Сбросить вес (Тара) "; btn.disabled = false;
+                btn.innerText = "Сбросить Тару (Ноль)"; btn.disabled = false;
             }).catch(() => {
                 showToast("Ошибка сети");
-                btn.innerText = "Сбросить вес (Тара) "; btn.disabled = false;
+                btn.innerText = "Сбросить Тару (Ноль)"; btn.disabled = false;
             });
         }
     </script>

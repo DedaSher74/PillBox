@@ -234,7 +234,7 @@
         <div class="card">
             <h2>Текущий вес таблеток</h2>
             <div class="weight-display" id="weight">0.00 г</div>
-            <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить Вес (Тара)</button>
+            <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес (ноль) </button>
         </div>
         
         <!-- ДИНАМИЧЕСКИЕ БУДИЛЬНИКИ -->
@@ -553,10 +553,10 @@
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
                 showToast("Тара обнулена!");
-                btn.innerText = "Сбросить Тару (Ноль)"; btn.disabled = false;
+                btn.innerText = "Сбросить вес (ноль) "; btn.disabled = false;
             }).catch(() => {
                 showToast("Ошибка сети");
-                btn.innerText = "Сбросить Тару (Ноль)"; btn.disabled = false;
+                btn.innerText = "Сбросить вес (ноль) "; btn.disabled = false;
             });
         }
     </script>

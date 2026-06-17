@@ -226,8 +226,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Таблеточница v7.5 (Облако)</h1>
-            <div class="time-box">Время устройства: <span id="time">--:--:--</span></div>
+            <h1>Таблеточница v8.1 </h1>
+            <div class="time-box">Время устройства: <span id="time" style="font-weight: bold; color: #222;">--:--:--</span></div>
         </header>
         
         <!-- КАРТОЧКА ВЕСА -->
@@ -309,10 +309,54 @@
         let currentAlarms = [];
         let ignoreIncomingUpdatesUntil = 0;
 
+        // Переменные для плавного локального хода часов
+        let deviceClockInterval = null;
+        let localHour = 0, localMinute = 0, localSecond = 0;
+
         function showToast(msg) {
             let toast = document.getElementById("toast");
             toast.innerText = msg; toast.className = "show";
             setTimeout(() => { toast.className = ""; }, 2500);
+        }
+
+        // Функция плавного отсчета секунд на стороне браузера
+        function syncLocalClock(timeStr) {
+            if (!timeStr) return;
+            const parts = timeStr.split(':');
+            if (parts.length !== 3) return;
+
+            localHour = parseInt(parts[0], 10);
+            localMinute = parseInt(parts[1], 10);
+            localSecond = parseInt(parts[2], 10);
+
+            // Сбрасываем старый таймер, если он был запущен
+            if (deviceClockInterval) {
+                clearInterval(deviceClockInterval);
+            }
+
+            // Отрисовываем время сразу
+            renderLocalClock();
+
+            // Запускаем ход часов каждую секунду локально
+            deviceClockInterval = setInterval(() => {
+                localSecond++;
+                if (localSecond >= 60) {
+                    localSecond = 0;
+                    localMinute++;
+                    if (localMinute >= 60) {
+                        localMinute = 0;
+                        localHour = (localHour + 1) % 24;
+                    }
+                }
+                renderLocalClock();
+            }, 1000);
+        }
+
+        function renderLocalClock() {
+            const hStr = String(localHour).padStart(2, '0');
+            const mStr = String(localMinute).padStart(2, '0');
+            const sStr = String(localSecond).padStart(2, '0');
+            document.getElementById('time').innerText = `${hStr}:${mStr}:${sStr}`;
         }
 
         // Получение статуса в реальном времени
@@ -321,7 +365,13 @@
             if (!data) return;
 
             document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
-            document.getElementById('time').innerText = data.time || '--:--:--';
+            
+            // Синхронизируем локальные асинхронные часы с базой данных
+            if (data.time) {
+                syncLocalClock(data.time);
+            } else {
+                document.getElementById('time').innerText = '--:--:--';
+            }
 
             if (Date.now() < ignoreIncomingUpdatesUntil) {
                 return; 
@@ -375,7 +425,7 @@
             }
         }
 
-        // Отрисовка списка будильников с интерактивным изменением времени
+        // Отрисовка списка будильников
         function renderAlarms() {
             const listDiv = document.getElementById('alarmsList');
             listDiv.innerHTML = '';
@@ -400,7 +450,7 @@
             }
         }
 
-        // Инлайновое изменение времени существующего будильника
+        // Изменение времени будильника
         function editAlarmTime(idx, newTime) {
             if (!newTime) return;
             currentAlarms[idx].time = newTime;

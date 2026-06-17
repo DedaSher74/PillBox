@@ -226,7 +226,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Таблеточница v8.1 </h1>
+            <h1>Таблеточница v8.2</h1>
             <div class="time-box">Время устройства: <span id="time" style="font-weight: bold; color: #222;">--:--:--</span></div>
         </header>
         
@@ -312,6 +312,12 @@
         // Переменные для плавного локального хода часов
         let deviceClockInterval = null;
         let localHour = 0, localMinute = 0, localSecond = 0;
+        
+        // Разница во времени между локальным ПК и сервером Firebase
+        let serverTimeOffset = 0; 
+        database.ref(".info/serverTimeOffset").on("value", (snap) => {
+            serverTimeOffset = snap.val() || 0;
+        });
 
         function showToast(msg) {
             let toast = document.getElementById("toast");
@@ -319,25 +325,42 @@
             setTimeout(() => { toast.className = ""; }, 2500);
         }
 
-        // Функция плавного отсчета секунд на стороне браузера
-        function syncLocalClock(timeStr) {
+        // Функция плавного отсчета секунд с компенсацией дрифта времени
+        function syncLocalClock(timeStr, lastUpdateMs) {
             if (!timeStr) return;
             const parts = timeStr.split(':');
             if (parts.length !== 3) return;
 
-            localHour = parseInt(parts[0], 10);
-            localMinute = parseInt(parts[1], 10);
-            localSecond = parseInt(parts[2], 10);
+            let hour = parseInt(parts[0], 10);
+            let minute = parseInt(parts[1], 10);
+            let second = parseInt(parts[2], 10);
 
-            // Сбрасываем старый таймер, если он был запущен
+            // Если доступен серверный таймштамп последней отправки данных
+            if (lastUpdateMs) {
+                const nowMs = Date.now() + serverTimeOffset; // Точное текущее время
+                const elapsedMs = Math.max(0, nowMs - lastUpdateMs); // Время, прошедшее с момента отправки
+                const elapsedSec = Math.floor(elapsedMs / 1000);
+
+                // Прибавляем прошедшие секунды к базовому времени пакета
+                let totalSeconds = hour * 3600 + minute * 60 + second + elapsedSec;
+                
+                hour = Math.floor(totalSeconds / 3600) % 24;
+                minute = Math.floor((totalSeconds % 3600) / 60);
+                second = totalSeconds % 60;
+            }
+
+            localHour = hour;
+            localMinute = minute;
+            localSecond = second;
+
+            // Сбрасываем старый таймер
             if (deviceClockInterval) {
                 clearInterval(deviceClockInterval);
             }
 
-            // Отрисовываем время сразу
             renderLocalClock();
 
-            // Запускаем ход часов каждую секунду локально
+            // Запускаем плавный ход локально на странице
             deviceClockInterval = setInterval(() => {
                 localSecond++;
                 if (localSecond >= 60) {
@@ -366,9 +389,9 @@
 
             document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
             
-            // Синхронизируем локальные асинхронные часы с базой данных
+            // Синхронизируем локальные асинхронные часы с учетом времени изменения записи status
             if (data.time) {
-                syncLocalClock(data.time);
+                syncLocalClock(data.time, data.lastUpdate);
             } else {
                 document.getElementById('time').innerText = '--:--:--';
             }

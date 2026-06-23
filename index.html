@@ -237,6 +237,21 @@
             <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес</button>
         </div>
         
+        <!-- СИСТЕМНЫЕ НАСТРОЙКИ (ЗУММЕР И СМС) -->
+        <div class="card">
+            <h2>Системные настройки</h2>
+            <div class="input-group">
+                <div class="checkbox-row">
+                    <input type="checkbox" id="smsEnabledInput" onchange="saveDeviceConfig()">
+                    <label for="smsEnabledInput" style="font-weight: 600; cursor:pointer;">Разрешить отправку СМС</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="buzzerEnabledInput" onchange="saveDeviceConfig()">
+                    <label for="buzzerEnabledInput" style="font-weight: 600; cursor:pointer;">Включить звуковые сигналы (Зуммер)</label>
+                </div>
+            </div>
+        </div>
+
         <!-- ДИНАМИЧЕСКИЕ БУДИЛЬНИКИ -->
         <div class="card">
             <h2>Настройка будильников</h2>
@@ -400,6 +415,16 @@
                 return; 
             }
 
+            // Синхронизация системных переключателей
+            const smsCheckbox = document.getElementById('smsEnabledInput');
+            if (document.activeElement !== smsCheckbox) {
+                smsCheckbox.checked = data.smsEnabled !== undefined ? data.smsEnabled : true;
+            }
+            const buzzerCheckbox = document.getElementById('buzzerEnabledInput');
+            if (document.activeElement !== buzzerCheckbox) {
+                buzzerCheckbox.checked = data.buzzerEnabled !== undefined ? data.buzzerEnabled : true;
+            }
+
             // 1. Получение телефонов
             currentPhones = data.phones || [];
             if (currentPhones.length === 0) {
@@ -424,6 +449,25 @@
                 timeInput.value = data.remindTime || '12:00';
             }
         });
+
+        // Отправка системной конфигурации (зуммер и СМС) на устройство
+        function saveDeviceConfig() {
+            const smsEnabled = document.getElementById('smsEnabledInput').checked;
+            const buzzerEnabled = document.getElementById('buzzerEnabledInput').checked;
+            
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            
+            database.ref('pillbox/commands').set({
+                action: "save_config",
+                smsEnabled: smsEnabled,
+                buzzerEnabled: buzzerEnabled,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Системные настройки обновлены на устройстве!");
+            }).catch(() => {
+                showToast("Ошибка отправки конфигурации");
+            });
+        }
 
         // Отрисовка списка контактов
         function renderContacts() {

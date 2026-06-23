@@ -10,8 +10,8 @@
     
     <style>
         :root {
-            --bg-color: #f0f5f5; 
-            --card-bg: rgba(255, 255, 255, 0.92); /* Полупрозрачные карточки для эффекта матового стекла */
+            --bg-color: #f4f8f8; 
+            --card-bg: rgba(255, 255, 255, 0.95); /* Белые плотные карточки */
             --text-color: #2c3e50;
             --primary-color: #009688; /* Бирюзовый */
             --primary-hover: #00796b;
@@ -21,7 +21,7 @@
         }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background: transparent; /* Сделано прозрачным, чтобы открыть слой анимации */
+            background: transparent; 
             color: var(--text-color); 
             margin: 0; 
             padding: 20px; 
@@ -33,70 +33,62 @@
             box-sizing: border-box;
         }
 
-        /* === ИСПРАВЛЕННЫЙ АНИМИРОВАННЫЙ ЗАДНИЙ ФОН === */
+        /* === НОВЫЙ ЭФФЕКТ: Парящие микро-пузырьки === */
         .bg-animation {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: -2; /* Уведено на самый задний план */
+            z-index: -2;
             overflow: hidden;
             pointer-events: none;
-            background: radial-gradient(circle at 50% 50%, #f4f9f9 0%, #e1eeee 100%); /* Базовый градиент здесь */
+            background: linear-gradient(135deg, #f5fafd 0%, #eef5f6 100%); /* Чистый светлый фон */
         }
-        .bg-blob {
+        
+        .bubble {
             position: absolute;
+            bottom: -60px;
+            background: transparent;
+            /* Тонкие, еле заметные контуры кругов */
+            border: 1.5px solid rgba(0, 150, 136, 0.12); 
             border-radius: 50%;
-            filter: blur(60px); /* Слегка уменьшено размытие для сочности цвета */
-            opacity: 0.35; /* Увеличена яркость сфер для четкой видимости */
-            animation: moveBlob 25s infinite alternate ease-in-out;
+            animation: floatUp 15s infinite linear;
         }
-        .blob-1 {
-            width: 320px;
-            height: 320px;
-            background-color: #009688;
-            top: -50px;
-            left: -50px;
-            animation-duration: 22s;
+
+        /* Навешиваем легкое внутреннее свечение для объема */
+        .bubble::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, rgba(0, 150, 136, 0.02) 70%);
         }
-        .blob-2 {
-            width: 420px;
-            height: 420px;
-            background-color: #80cbc4;
-            bottom: -80px;
-            right: -60px;
-            animation-duration: 28s;
-            animation-delay: -6s;
-        }
-        .blob-3 {
-            width: 280px;
-            height: 280px;
-            background-color: #26a69a;
-            top: 40%;
-            right: 10%;
-            animation-duration: 20s;
-            animation-delay: -12s;
-        }
-        @keyframes moveBlob {
+
+        @keyframes floatUp {
             0% {
-                transform: translate(0px, 0px) rotate(0deg) scale(1);
+                transform: translateY(0) rotate(0deg) scale(0.8);
+                opacity: 0;
             }
-            33% {
-                transform: translate(50px, 80px) rotate(120deg) scale(1.15);
+            10% {
+                opacity: 1;
             }
-            66% {
-                transform: translate(-40px, 40px) rotate(240deg) scale(0.85);
+            90% {
+                opacity: 1;
             }
             100% {
-                transform: translate(0px, 0px) rotate(360deg) scale(1);
+                transform: translateY(-115vh) rotate(360deg) scale(1.1);
+                opacity: 0;
             }
         }
 
         .container { 
             width: 100%; 
             max-width: 500px; 
-            z-index: 1; /* Контент всегда поверх фона */
+            z-index: 1; 
         }
         header { 
             text-align: center; 
@@ -107,18 +99,17 @@
             margin: 0 0 8px 0; 
             color: var(--primary-color); 
             font-weight: 700;
-            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
         }
         .time-box { 
             font-size: 14px; 
             color: #5a738e; 
-            background: rgba(255, 255, 255, 0.85);
+            background: #ffffff;
             padding: 6px 14px;
             border-radius: 20px;
             display: inline-flex;
             align-items: center;
-            box-shadow: 0 4px 12px rgba(0, 150, 136, 0.08);
-            border: 1px solid rgba(0, 150, 136, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 150, 136, 0.08);
         }
 
         /* АНИМАЦИЯ 1: Пульсирующий индикатор связи */
@@ -152,10 +143,8 @@
             border-radius: 16px; 
             padding: 22px; 
             margin-bottom: 16px; 
-            box-shadow: 0 10px 30px rgba(0, 79, 70, 0.06); 
-            border: 1px solid rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px); /* Матовое стекло */
-            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 79, 70, 0.04); 
+            border: 1px solid rgba(255, 255, 255, 0.8);
         }
         .card h2 { 
             font-size: 14px; 
@@ -193,7 +182,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: rgba(250, 253, 253, 0.8);
+            background-color: #fafdfd;
             padding: 14px 18px;
             border-radius: 12px;
             margin-bottom: 8px;
@@ -284,17 +273,16 @@
             box-sizing: border-box; 
             padding: 14px; 
             border-radius: 10px; 
-            border: 1.5px solid rgba(0, 150, 136, 0.3); 
-            background: rgba(255, 255, 255, 0.8);
+            border: 1.5px solid rgba(0, 150, 136, 0.25); 
+            background: #ffffff;
             font-size: 15px; 
             font-family: inherit;
             color: var(--text-color);
             outline: none;
-            transition: border-color 0.15s ease, background-color 0.15s ease;
+            transition: border-color 0.15s ease;
         }
         input[type="text"]:focus, input[type="time"]:focus {
             border-color: var(--primary-color);
-            background-color: #ffffff;
         }
         input[type="time"] {
             width: auto;
@@ -322,7 +310,7 @@
         .btn:hover {
             background-color: var(--primary-hover);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 150, 136, 0.25);
+            box-shadow: 0 8px 18px rgba(0, 150, 136, 0.2);
         }
         .btn:active {
             transform: translateY(1px);
@@ -419,11 +407,14 @@
 </head>
 <body>
 
-    <!-- Элементы анимированного заднего фона -->
+    <!-- ИСПРАВЛЕННЫЙ ЗАДНИЙ ФОН: 6 анимированных парящих пузырьков с разной скоростью и задержкой -->
     <div class="bg-animation">
-        <div class="bg-blob blob-1"></div>
-        <div class="bg-blob blob-2"></div>
-        <div class="bg-blob blob-3"></div>
+        <div class="bubble" style="left: 8%; width: 45px; height: 45px; animation-delay: 0s; animation-duration: 22s;"></div>
+        <div class="bubble" style="left: 24%; width: 25px; height: 25px; animation-delay: 3s; animation-duration: 16s;"></div>
+        <div class="bubble" style="left: 45%; width: 55px; height: 55px; animation-delay: 1s; animation-duration: 26s;"></div>
+        <div class="bubble" style="left: 62%; width: 20px; height: 20px; animation-delay: 5s; animation-duration: 14s;"></div>
+        <div class="bubble" style="left: 78%; width: 38px; height: 38px; animation-delay: 8s; animation-duration: 20s;"></div>
+        <div class="bubble" style="left: 92%; width: 30px; height: 30px; animation-delay: 2s; animation-duration: 18s;"></div>
     </div>
 
     <div class="container">
@@ -904,7 +895,6 @@
             });
         }
 
-        // Сохранение настроек автонапоминания
         function saveAutoReminder() {
             const btn = document.getElementById('saveRemindBtn');
             const time = document.getElementById('remindTimeInput').value;

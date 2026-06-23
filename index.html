@@ -226,7 +226,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Таблеточница v1.0</h1>
+            <h1>Таблеточница v1.5</h1>
             <div class="time-box">Время устройства: <span id="time" style="font-weight: bold; color: #222;">--:--:--</span></div>
         </header>
         
@@ -553,6 +553,7 @@
             syncPhones();
         }
 
+        // Обновление телефонов
         function syncPhones() {
             database.ref('pillbox/commands').set({
                 action: "save_phones",
@@ -586,6 +587,7 @@
             syncAlarms();
         }
 
+        // Синхронизация будильников
         function syncAlarms() {
             const timeList = currentAlarms.map(a => a.time);
             database.ref('pillbox/commands').set({

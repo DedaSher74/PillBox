@@ -10,17 +10,17 @@
     
     <style>
         :root {
-            --bg-color: #f0f2f5; 
+            --bg-color: #f0f5f5; 
             --card-bg: #ffffff; 
-            --text-color: #333333;
-            --primary-color: #007bff; 
-            --primary-hover: #0056b3;
-            --success-color: #28a745; 
-            --pending-color: #dc3545;
-            --border-color: #e9ecef;
+            --text-color: #2c3e50;
+            --primary-color: #009688; /* Успокаивающий бирюзовый */
+            --primary-hover: #00796b;
+            --success-color: #2e7d32; 
+            --pending-color: #c62828;
+            --border-color: #e0f2f1;
         }
         body { 
-            font-family: system-ui, -apple-system, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background-color: var(--bg-color); 
             color: var(--text-color); 
             margin: 0; 
@@ -37,155 +37,241 @@
             margin-bottom: 24px; 
         }
         h1 { 
-            font-size: 24px; 
+            font-size: 26px; 
             margin: 0 0 8px 0; 
             color: var(--primary-color); 
+            font-weight: 700;
         }
         .time-box { 
             font-size: 14px; 
-            color: #666; 
+            color: #5a738e; 
+            background: rgba(0, 150, 136, 0.05);
+            padding: 6px 14px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
         }
+
+        /* АНИМАЦИЯ 1: Пульсирующий индикатор связи */
+        .online-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(46, 125, 50, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(46, 125, 50, 0);
+            }
+        }
+
         .card { 
             background: var(--card-bg); 
             border-radius: 16px; 
-            padding: 20px; 
+            padding: 22px; 
             margin-bottom: 16px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
+            box-shadow: 0 4px 20px rgba(0, 79, 70, 0.05); 
+            border: 1px solid rgba(0, 150, 136, 0.08);
         }
         .card h2 { 
-            font-size: 15px; 
+            font-size: 14px; 
             margin: 0; 
             text-transform: uppercase; 
-            color: #777; 
-            letter-spacing: 0.5px;
+            color: #617d7a; 
+            letter-spacing: 0.8px;
+            font-weight: 700;
         }
+
+        /* АНИМАЦИЯ 2: Шиммер-эффект на вес таблеток */
         .weight-display { 
-            font-size: 44px; 
-            font-weight: 700; 
+            font-size: 48px; 
+            font-weight: 800; 
             text-align: center; 
-            margin: 10px 0 16px 0; 
-            color: #222;
+            margin: 15px 0 20px 0; 
+            background: linear-gradient(to right, #1a252f 20%, var(--primary-color) 40%, var(--primary-hover) 60%, #1a252f 80%);
+            background-size: 200% auto;
+            color: #1a252f;
+            background-clip: text;
+            text-fill-color: transparent;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 6s linear infinite;
+            font-feature-settings: "tnum"; 
+        }
+        @keyframes shine {
+            to {
+                background-position: 200% center;
+            }
         }
         
+        /* АНИМАЦИЯ 3: Плавное всплывание элементов списков */
         .list-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #f8f9fa;
-            padding: 12px 16px;
-            border-radius: 10px;
+            background-color: #fafdfd;
+            padding: 14px 18px;
+            border-radius: 12px;
             margin-bottom: 8px;
             border: 1px solid var(--border-color);
+            animation: slideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
         }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .list-item div {
             display: flex;
             align-items: center;
         }
         .contact-label {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--primary-color);
-            background-color: rgba(0, 123, 255, 0.08);
-            padding: 2px 8px;
+            background-color: rgba(0, 150, 136, 0.08);
+            padding: 3px 8px;
             border-radius: 6px;
         }
         .alarm-label {
-            font-size: 13px;
-            font-weight: 700;
-            color: #555;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
         }
         .delete-btn {
-            color: var(--pending-color);
-            font-size: 24px;
+            color: #b91c1c;
+            font-size: 26px;
             font-weight: bold;
             cursor: pointer;
             line-height: 1;
             padding: 0 4px;
-            transition: color 0.15s ease;
+            transition: transform 0.1s ease;
             user-select: none;
         }
         .delete-btn:hover {
-            color: #bd2130;
+            transform: scale(1.2);
         }
 
         .status { 
-            font-size: 11px; 
-            padding: 3px 10px; 
+            font-size: 12px; 
+            padding: 4px 12px; 
             border-radius: 20px; 
             font-weight: 600; 
             text-transform: uppercase; 
         }
         .status.taken { 
-            background-color: rgba(40,167,69,0.1); 
+            background-color: rgba(46,125,50,0.1); 
             color: var(--success-color); 
         }
+
+        /* АНИМАЦИЯ 5: Пульсирующий статус ожидания */
         .status.pending { 
-            background-color: rgba(220,53,69,0.1); 
+            background-color: rgba(198,40,40,0.1); 
             color: var(--pending-color); 
+            animation: statusPulse 2s infinite alternate;
+        }
+        @keyframes statusPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.2);
+            }
+            100% {
+                box-shadow: 0 0 0 6px rgba(198, 40, 40, 0);
+            }
         }
 
         .input-group { 
             display: flex; 
             flex-direction: column; 
-            gap: 10px; 
+            gap: 12px; 
         }
         .input-row {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
         input[type="text"], input[type="time"] { 
             width: 100%; 
             box-sizing: border-box; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid #ccc; 
+            padding: 14px; 
+            border-radius: 10px; 
+            border: 1.5px solid #b2dfdb; 
             font-size: 15px; 
             font-family: inherit;
+            color: var(--text-color);
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        input[type="text"]:focus, input[type="time"]:focus {
+            border-color: var(--primary-color);
         }
         input[type="time"] {
             width: auto;
             flex-grow: 1;
         }
 
+        /* АНИМАЦИЯ 4: Интерактивные парящие кнопки */
         .btn { 
             display: inline-flex; 
             align-items: center; 
             justify-content: center;
             width: 100%; 
-            padding: 14px; 
+            padding: 15px; 
             background-color: var(--primary-color); 
             color: white; 
             border: none; 
             border-radius: 12px; 
-            font-size: 15px; 
+            font-size: 16px; 
             font-weight: 600; 
             cursor: pointer; 
-            transition: background-color 0.15s ease, transform 0.1s ease; 
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background-color 0.2s ease; 
             box-sizing: border-box;
+            box-shadow: 0 4px 10px rgba(0, 150, 136, 0.15);
         }
         .btn:hover {
             background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 150, 136, 0.3);
         }
         .btn:active {
-            transform: scale(0.98);
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 150, 136, 0.15);
         }
         .btn-sm {
-            padding: 12px 20px;
+            padding: 14px 22px;
             width: auto;
         }
         
         .checkbox-row { 
             display: flex; 
             align-items: center; 
-            gap: 10px; 
-            margin: 8px 0; 
+            gap: 12px; 
+            margin: 6px 0; 
             font-size: 15px; 
         }
         input[type="checkbox"] { 
-            width: 20px; 
-            height: 20px; 
+            width: 22px; 
+            height: 22px; 
             cursor: pointer; 
+            accent-color: var(--primary-color);
         }
 
         #reminderConfig {
@@ -197,19 +283,19 @@
 
         #toast { 
             visibility: hidden; 
-            min-width: 250px; 
-            background-color: #333; 
+            min-width: 260px; 
+            background-color: #2c3e50; 
             color: #fff; 
             text-align: center; 
-            border-radius: 8px; 
-            padding: 14px; 
+            border-radius: 10px; 
+            padding: 16px; 
             position: fixed; 
             z-index: 999; 
             left: 50%; 
             bottom: 30px; 
             transform: translateX(-50%); 
             font-size: 14px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
             transition: opacity 0.2s linear; 
             opacity: 0; 
         }
@@ -218,43 +304,43 @@
             opacity: 1; 
         }
 
-        /* Многоуровневые предупреждающие баннеры */
+        /* Стилизация баннеров предупреждений */
         .alert-banner {
             display: none;
-            padding: 14px;
-            border-radius: 12px;
+            padding: 16px;
+            border-radius: 14px;
             text-align: center;
             font-weight: 700;
             margin-bottom: 16px;
             font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .banner-stage-1 {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-            box-shadow: 0 4px 10px rgba(255, 193, 7, 0.15);
+            line-height: 1.4;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
-        @keyframes pulse {
+        .banner-stage-1 {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        @keyframes bannerPulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.015); box-shadow: 0 6px 15px rgba(220, 53, 69, 0.45); }
+            50% { transform: scale(1.015); box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3); }
             100% { transform: scale(1); }
         }
-        
+
         .banner-stage-2 {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            animation: pulse 1.5s infinite;
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            animation: bannerPulse 1.8s infinite;
         }
-        
+
         .banner-stage-3 {
-            background-color: #721c24;
-            color: #f8d7da;
-            border: 1px solid #491217;
-            box-shadow: 0 4px 12px rgba(114, 28, 36, 0.4);
+            background-color: #7f1d1d;
+            color: #fee2e2;
+            border: 1px solid #991b1b;
+            box-shadow: 0 6px 20px rgba(127, 29, 29, 0.4);
         }
     </style>
 </head>
@@ -262,7 +348,11 @@
     <div class="container">
         <header>
             <h1>Таблеточница v1.5</h1>
-            <div class="time-box">Время устройства: <span id="time" style="font-weight: bold; color: #222;">--:--:--</span></div>
+            <!-- Измененная разметка с онлайн-индикатором -->
+            <div class="time-box">
+                <span class="online-indicator"></span>
+                Время устройства: &nbsp;<span id="time" style="font-weight: bold; color: #222;">--:--:--</span>
+            </div>
         </header>
 
         <!-- ДИНАМИЧЕСКИЙ ЭСКАЛАЦИОННЫЙ БАННЕР -->
@@ -686,6 +776,7 @@
             syncAlarms();
         }
 
+        // Анимация при удалении будильника
         function deleteAlarm(idx) {
             currentAlarms.splice(idx, 1);
             ignoreIncomingUpdatesUntil = Date.now() + 6000;

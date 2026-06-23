@@ -54,7 +54,7 @@
         }
         .card h2 { 
             font-size: 15px; 
-            margin: 0 0 14px 0; 
+            margin: 0; 
             text-transform: uppercase; 
             color: #777; 
             letter-spacing: 0.5px;
@@ -170,10 +170,6 @@
         .btn:active {
             transform: scale(0.98);
         }
-        .btn:disabled { 
-            background-color: #a0cfff !important; 
-            cursor: not-allowed; 
-        }
         .btn-sm {
             padding: 12px 20px;
             width: auto;
@@ -221,6 +217,45 @@
             visibility: visible; 
             opacity: 1; 
         }
+
+        /* Многоуровневые предупреждающие баннеры */
+        .alert-banner {
+            display: none;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 16px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .banner-stage-1 {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            box-shadow: 0 4px 10px rgba(255, 193, 7, 0.15);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.015); box-shadow: 0 6px 15px rgba(220, 53, 69, 0.45); }
+            100% { transform: scale(1); }
+        }
+        
+        .banner-stage-2 {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .banner-stage-3 {
+            background-color: #721c24;
+            color: #f8d7da;
+            border: 1px solid #491217;
+            box-shadow: 0 4px 12px rgba(114, 28, 36, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -229,48 +264,59 @@
             <h1>Таблеточница v1.5</h1>
             <div class="time-box">Время устройства: <span id="time" style="font-weight: bold; color: #222;">--:--:--</span></div>
         </header>
+
+        <!-- ДИНАМИЧЕСКИЙ ЭСКАЛАЦИОННЫЙ БАННЕР -->
+        <div id="cupWarningBanner" class="alert-banner">
+            ⚠️ Ожидание получения статуса...
+        </div>
         
         <!-- КАРТОЧКА ВЕСА -->
         <div class="card">
-            <h2>Текущий вес таблеток</h2>
+            <h2 style="margin-bottom: 14px;">Текущий вес таблеток</h2>
             <div class="weight-display" id="weight">0.00 г</div>
             <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес</button>
         </div>
         
-        <!-- СИСТЕМНЫЕ НАСТРОЙКИ (ПЕРИФЕРИЯ) -->
-        <div class="card">
-            <h2>Системные настройки</h2>
-            <div class="input-group">
-                <div class="checkbox-row">
-                    <input type="checkbox" id="smsEnabledInput" onchange="saveDeviceConfig()">
-                    <label for="smsEnabledInput" style="font-weight: 600; cursor:pointer;">Разрешить отправку СМС</label>
-                </div>
-                
-                <hr style="border:0; border-top: 1px solid var(--border-color); margin:10px 0;">
-                <h3 style="font-size:14px; margin:0 0 6px 0; color:#555;">Индивидуальная настройка звуков зуммера:</h3>
-                
-                <div class="checkbox-row">
-                    <input type="checkbox" id="buzzAlarmInput" onchange="saveDeviceConfig()">
-                    <label for="buzzAlarmInput" style="font-weight: 600; cursor:pointer;">Звук при будильнике (тревоге)</label>
-                </div>
-                <div class="checkbox-row">
-                    <input type="checkbox" id="buzzButtonsInput" onchange="saveDeviceConfig()">
-                    <label for="buzzButtonsInput" style="font-weight: 600; cursor:pointer;">Звук при нажатии на кнопки</label>
-                </div>
-                <div class="checkbox-row">
-                    <input type="checkbox" id="buzzIntakeInput" onchange="saveDeviceConfig()">
-                    <label for="buzzIntakeInput" style="font-weight: 600; cursor:pointer;">Звук при приеме таблетки</label>
-                </div>
-                <div class="checkbox-row">
-                    <input type="checkbox" id="buzzTareInput" onchange="saveDeviceConfig()">
-                    <label for="buzzTareInput" style="font-weight: 600; cursor:pointer;">Звук при сбросе тары (весов)</label>
+        <!-- СИСТЕМНЫЕ НАСТРОЙКИ (КЛИКАБЕЛЬНЫЙ СПОЙЛЕР) -->
+        <div class="card" style="padding: 16px 20px;">
+            <div onclick="toggleCollapse('systemSettingsContent', 'systemSettingsChevron')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                <h2>Системные настройки</h2>
+                <span id="systemSettingsChevron" style="font-size: 15px; color: #777; transition: transform 0.2s ease;">▼</span>
+            </div>
+            
+            <div id="systemSettingsContent" style="display: none; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+                <div class="input-group">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="smsEnabledInput" onchange="saveDeviceConfig()">
+                        <label for="smsEnabledInput" style="font-weight: 600; cursor:pointer;">Разрешить отправку СМС</label>
+                    </div>
+                    
+                    <hr style="border:0; border-top: 1px solid var(--border-color); margin:12px 0;">
+                    <h3 style="font-size:14px; margin:0 0 6px 0; color:#555;">Индивидуальная настройка звуков зуммера:</h3>
+                    
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="buzzAlarmInput" onchange="saveDeviceConfig()">
+                        <label for="buzzAlarmInput" style="font-weight: 600; cursor:pointer;">Звук при будильнике (тревоге)</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="buzzButtonsInput" onchange="saveDeviceConfig()">
+                        <label for="buzzButtonsInput" style="font-weight: 600; cursor:pointer;">Звук при нажатии на кнопки</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="buzzIntakeInput" onchange="saveDeviceConfig()">
+                        <label for="buzzIntakeInput" style="font-weight: 600; cursor:pointer;">Звук при приеме таблетки</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="buzzTareInput" onchange="saveDeviceConfig()">
+                        <label for="buzzTareInput" style="font-weight: 600; cursor:pointer;">Звук при сбросе тары (весов)</label>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- ДИНАМИЧЕСКИЕ БУДИЛЬНИКИ -->
         <div class="card">
-            <h2>Настройка будильников</h2>
+            <h2 style="margin-bottom: 14px;">Настройка будильников</h2>
             <div id="alarmsList"></div>
             
             <div id="addAlarmForm" style="margin-top: 12px;">
@@ -283,7 +329,7 @@
 
         <!-- СМС НАПОМИНАНИЯ -->
         <div class="card">
-            <h2>СМС Напоминания Пациенту</h2>
+            <h2 style="margin-bottom: 14px;">СМС Напоминания Пациенту</h2>
             <div class="input-group" style="margin-bottom:16px;">
                 <h3 style="font-size:14px; margin:0; color:#555;">Ручное СМС (на Телефон Пациента):</h3>
                 <div class="input-row">
@@ -312,7 +358,7 @@
         
         <!-- ДИНАМИЧЕСКИЕ КОНТАКТЫ -->
         <div class="card">
-            <h2>Номера контактов</h2>
+            <h2 style="margin-bottom: 14px;">Номера контактов</h2>
             <div id="contactsList"></div>
             
             <div id="addContactForm" style="margin-top: 12px;">
@@ -352,6 +398,19 @@
             let toast = document.getElementById("toast");
             toast.innerText = msg; toast.className = "show";
             setTimeout(() => { toast.className = ""; }, 2500);
+        }
+
+        // Функция спойлера
+        function toggleCollapse(contentId, chevronId) {
+            const content = document.getElementById(contentId);
+            const chevron = document.getElementById(chevronId);
+            if (content.style.display === "none") {
+                content.style.display = "block";
+                chevron.style.transform = "rotate(180deg)";
+            } else {
+                content.style.display = "none";
+                chevron.style.transform = "rotate(0deg)";
+            }
         }
 
         function syncLocalClock(timeStr, lastUpdateMs) {
@@ -419,11 +478,34 @@
                 document.getElementById('time').innerText = '--:--:--';
             }
 
+            // Многоуровневое управление отображением тревожного баннера
+            const warningBanner = document.getElementById('cupWarningBanner');
+            if (data.cupMissing === true) {
+                warningBanner.style.display = 'block';
+                warningBanner.className = 'alert-banner'; // Сброс стилей
+                
+                if (data.cupStage === 1) {
+                    warningBanner.classList.add('banner-stage-1');
+                    warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов более 1 минуты. Пожалуйста, верните ее на место.';
+                } else if (data.cupStage === 2) {
+                    warningBanner.classList.add('banner-stage-2');
+                    warningBanner.innerHTML = '🔊 Внимание! Чаша отсутствует более 3 минут! На таблеточнице включен звуковой сигнал.';
+                } else if (data.cupStage === 3) {
+                    warningBanner.classList.add('banner-stage-3');
+                    warningBanner.innerHTML = '✉️ Критическая ситуация! Чаша отсутствует более 5 минут! Родственникам отправлены тревожные СМС.';
+                } else {
+                    warningBanner.classList.add('banner-stage-1');
+                    warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов!';
+                }
+            } else {
+                warningBanner.style.display = 'none';
+            }
+
             if (Date.now() < ignoreIncomingUpdatesUntil) {
                 return; 
             }
 
-            // Синхронизация системных переключателей с базой данных
+            // Синхронизация переключателей
             const smsCheckbox = document.getElementById('smsEnabledInput');
             if (document.activeElement !== smsCheckbox) {
                 smsCheckbox.checked = data.smsEnabled !== undefined ? data.smsEnabled : true;
@@ -474,7 +556,7 @@
             }
         });
 
-        // Отправка системной конфигурации (поканальные галочки звука) на устройство
+        // Отправка системной конфигурации на устройство
         function saveDeviceConfig() {
             const smsEnabled = document.getElementById('smsEnabledInput').checked;
             const buzzAlarm = document.getElementById('buzzAlarmInput').checked;

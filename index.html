@@ -226,7 +226,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Таблеточница v1.5</h1>
+            <h1>Таблеточница v1.0</h1>
             <div class="time-box">Время устройства: <span id="time" style="font-weight: bold; color: #222;">--:--:--</span></div>
         </header>
         
@@ -237,7 +237,7 @@
             <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес</button>
         </div>
         
-        <!-- СИСТЕМНЫЕ НАСТРОЙКИ (ЗУММЕР И СМС) -->
+        <!-- СИСТЕМНЫЕ НАСТРОЙКИ (ПЕРИФЕРИЯ) -->
         <div class="card">
             <h2>Системные настройки</h2>
             <div class="input-group">
@@ -245,9 +245,25 @@
                     <input type="checkbox" id="smsEnabledInput" onchange="saveDeviceConfig()">
                     <label for="smsEnabledInput" style="font-weight: 600; cursor:pointer;">Разрешить отправку СМС</label>
                 </div>
+                
+                <hr style="border:0; border-top: 1px solid var(--border-color); margin:10px 0;">
+                <h3 style="font-size:14px; margin:0 0 6px 0; color:#555;">Индивидуальная настройка звуков зуммера:</h3>
+                
                 <div class="checkbox-row">
-                    <input type="checkbox" id="buzzerEnabledInput" onchange="saveDeviceConfig()">
-                    <label for="buzzerEnabledInput" style="font-weight: 600; cursor:pointer;">Включить звуковые сигналы (Зуммер)</label>
+                    <input type="checkbox" id="buzzAlarmInput" onchange="saveDeviceConfig()">
+                    <label for="buzzAlarmInput" style="font-weight: 600; cursor:pointer;">Звук при будильнике (тревоге)</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="buzzButtonsInput" onchange="saveDeviceConfig()">
+                    <label for="buzzButtonsInput" style="font-weight: 600; cursor:pointer;">Звук при нажатии на кнопки</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="buzzIntakeInput" onchange="saveDeviceConfig()">
+                    <label for="buzzIntakeInput" style="font-weight: 600; cursor:pointer;">Звук при приеме таблетки</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="buzzTareInput" onchange="saveDeviceConfig()">
+                    <label for="buzzTareInput" style="font-weight: 600; cursor:pointer;">Звук при сбросе тары (весов)</label>
                 </div>
             </div>
         </div>
@@ -324,11 +340,9 @@
         let currentAlarms = [];
         let ignoreIncomingUpdatesUntil = 0;
 
-        // Переменные для плавного локального хода часов
         let deviceClockInterval = null;
         let localHour = 0, localMinute = 0, localSecond = 0;
         
-        // Разница во времени между локальным ПК и сервером Firebase
         let serverTimeOffset = 0; 
         database.ref(".info/serverTimeOffset").on("value", (snap) => {
             serverTimeOffset = snap.val() || 0;
@@ -340,7 +354,6 @@
             setTimeout(() => { toast.className = ""; }, 2500);
         }
 
-        // Функция плавного отсчета секунд с компенсацией дрифта времени
         function syncLocalClock(timeStr, lastUpdateMs) {
             if (!timeStr) return;
             const parts = timeStr.split(':');
@@ -350,13 +363,11 @@
             let minute = parseInt(parts[1], 10);
             let second = parseInt(parts[2], 10);
 
-            // Если доступен серверный таймштамп последней отправки данных
             if (lastUpdateMs) {
-                const nowMs = Date.now() + serverTimeOffset; // Точное текущее время
-                const elapsedMs = Math.max(0, nowMs - lastUpdateMs); // Время, прошедшее с момента отправки
+                const nowMs = Date.now() + serverTimeOffset; 
+                const elapsedMs = Math.max(0, nowMs - lastUpdateMs); 
                 const elapsedSec = Math.floor(elapsedMs / 1000);
 
-                // Прибавляем прошедшие секунды к базовому времени пакета
                 let totalSeconds = hour * 3600 + minute * 60 + second + elapsedSec;
                 
                 hour = Math.floor(totalSeconds / 3600) % 24;
@@ -368,14 +379,12 @@
             localMinute = minute;
             localSecond = second;
 
-            // Сбрасываем старый таймер
             if (deviceClockInterval) {
                 clearInterval(deviceClockInterval);
             }
 
             renderLocalClock();
 
-            // Запускаем плавный ход локально на странице
             deviceClockInterval = setInterval(() => {
                 localSecond++;
                 if (localSecond >= 60) {
@@ -404,7 +413,6 @@
 
             document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
             
-            // Синхронизируем локальные асинхронные часы с учетом времени изменения записи status
             if (data.time) {
                 syncLocalClock(data.time, data.lastUpdate);
             } else {
@@ -415,14 +423,30 @@
                 return; 
             }
 
-            // Синхронизация системных переключателей
+            // Синхронизация системных переключателей с базой данных
             const smsCheckbox = document.getElementById('smsEnabledInput');
             if (document.activeElement !== smsCheckbox) {
                 smsCheckbox.checked = data.smsEnabled !== undefined ? data.smsEnabled : true;
             }
-            const buzzerCheckbox = document.getElementById('buzzerEnabledInput');
-            if (document.activeElement !== buzzerCheckbox) {
-                buzzerCheckbox.checked = data.buzzerEnabled !== undefined ? data.buzzerEnabled : true;
+            
+            const bAlmCheckbox = document.getElementById('buzzAlarmInput');
+            if (document.activeElement !== bAlmCheckbox) {
+                bAlmCheckbox.checked = data.buzzAlarm !== undefined ? data.buzzAlarm : true;
+            }
+            
+            const bBtnCheckbox = document.getElementById('buzzButtonsInput');
+            if (document.activeElement !== bBtnCheckbox) {
+                bBtnCheckbox.checked = data.buzzButtons !== undefined ? data.buzzButtons : true;
+            }
+            
+            const bItkCheckbox = document.getElementById('buzzIntakeInput');
+            if (document.activeElement !== bItkCheckbox) {
+                bItkCheckbox.checked = data.buzzIntake !== undefined ? data.buzzIntake : true;
+            }
+            
+            const bTarCheckbox = document.getElementById('buzzTareInput');
+            if (document.activeElement !== bTarCheckbox) {
+                bTarCheckbox.checked = data.buzzTare !== undefined ? data.buzzTare : true;
             }
 
             // 1. Получение телефонов
@@ -450,20 +474,26 @@
             }
         });
 
-        // Отправка системной конфигурации (зуммер и СМС) на устройство
+        // Отправка системной конфигурации (поканальные галочки звука) на устройство
         function saveDeviceConfig() {
             const smsEnabled = document.getElementById('smsEnabledInput').checked;
-            const buzzerEnabled = document.getElementById('buzzerEnabledInput').checked;
+            const buzzAlarm = document.getElementById('buzzAlarmInput').checked;
+            const buzzButtons = document.getElementById('buzzButtonsInput').checked;
+            const buzzIntake = document.getElementById('buzzIntakeInput').checked;
+            const buzzTare = document.getElementById('buzzTareInput').checked;
             
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
             
             database.ref('pillbox/commands').set({
                 action: "save_config",
                 smsEnabled: smsEnabled,
-                buzzerEnabled: buzzerEnabled,
+                buzzAlarm: buzzAlarm,
+                buzzButtons: buzzButtons,
+                buzzIntake: buzzIntake,
+                buzzTare: buzzTare,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                showToast("Системные настройки обновлены на устройстве!");
+                showToast("Системные настройки отправлены на устройство!");
             }).catch(() => {
                 showToast("Ошибка отправки конфигурации");
             });
@@ -517,7 +547,6 @@
             }
         }
 
-        // Изменение времени будильника
         function editAlarmTime(idx, newTime) {
             if (!newTime) return;
             currentAlarms[idx].time = newTime;
@@ -525,7 +554,6 @@
             syncAlarms();
         }
 
-        // Добавление контакта
         function addContact() {
             const input = document.getElementById('newPhoneInput');
             let phone = input.value.trim().replace(/\s+/g, '');
@@ -545,7 +573,6 @@
             syncPhones();
         }
 
-        // Удаление контакта
         function deleteContact(idx) {
             currentPhones.splice(idx, 1);
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
@@ -553,7 +580,6 @@
             syncPhones();
         }
 
-        // Обновление телефонов
         function syncPhones() {
             database.ref('pillbox/commands').set({
                 action: "save_phones",
@@ -566,7 +592,6 @@
             });
         }
 
-        // Добавление будильника
         function addAlarm() {
             const input = document.getElementById('newAlarmInput');
             const time = input.value;
@@ -579,7 +604,6 @@
             syncAlarms();
         }
 
-        // Удаление будильника
         function deleteAlarm(idx) {
             currentAlarms.splice(idx, 1);
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
@@ -587,7 +611,6 @@
             syncAlarms();
         }
 
-        // Синхронизация будильников
         function syncAlarms() {
             const timeList = currentAlarms.map(a => a.time);
             database.ref('pillbox/commands').set({

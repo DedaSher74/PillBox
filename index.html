@@ -10,8 +10,8 @@
     
     <style>
         :root {
-            --bg-color: #f4f8f8; 
-            --card-bg: rgba(255, 255, 255, 0.95); /* Белые плотные карточки */
+            --bg-color: #eef5f6; /* Ровный, чистый однотонный фон */
+            --card-bg: rgba(255, 255, 255, 0.96); 
             --text-color: #2c3e50;
             --primary-color: #009688; /* Бирюзовый */
             --primary-hover: #00796b;
@@ -21,7 +21,7 @@
         }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background: transparent; 
+            background: var(--bg-color); 
             color: var(--text-color); 
             margin: 0; 
             padding: 20px; 
@@ -33,54 +33,74 @@
             box-sizing: border-box;
         }
 
-        /* === НОВЫЙ ЭФФЕКТ: Парящие микро-пузырьки === */
+        /* === КОНТЕЙНЕР ДЛЯ ЛЕТАЮЩИХ ЭЛЕМЕНТОВ === */
         .bg-animation {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: -2;
+            z-index: 0; /* Расположение над фоном body, но под карточками */
             overflow: hidden;
             pointer-events: none;
-            background: linear-gradient(135deg, #f5fafd 0%, #eef5f6 100%); /* Чистый светлый фон */
         }
         
-        .bubble {
+        /* === ОБЪЕМНЫЕ ЛЕТАЮЩИЕ ТАБЛЕТКИ === */
+        .floating-pill {
             position: absolute;
             bottom: -60px;
-            background: transparent;
-            /* Тонкие, еле заметные контуры кругов */
-            border: 1.5px solid rgba(0, 150, 136, 0.12); 
             border-radius: 50%;
-            animation: floatUp 15s infinite linear;
+            /* Плотный полупрозрачный бирюзовый цвет */
+            background: linear-gradient(135deg, rgba(0, 150, 136, 0.35) 0%, rgba(38, 166, 154, 0.5) 100%);
+            /* Светлый контур для объема */
+            border: 1px solid rgba(255, 255, 255, 0.6); 
+            /* Выраженная тень, чтобы элементы "летали" в пространстве */
+            box-shadow: 0 6px 15px rgba(0, 150, 136, 0.2); 
         }
 
-        /* Навешиваем легкое внутреннее свечение для объема */
-        .bubble::after {
+        /* Блик внутри летающего диска для придания глянцевого объема */
+        .floating-pill::after {
             content: '';
             position: absolute;
-            top: 4px;
-            left: 4px;
-            right: 4px;
-            bottom: 4px;
+            top: 15%;
+            left: 15%;
+            width: 35%;
+            height: 35%;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, rgba(0, 150, 136, 0.02) 70%);
+            background: rgba(255, 255, 255, 0.5);
+            filter: blur(1px);
         }
 
-        @keyframes floatUp {
+        /* Две траектории полета с покачиванием в разные стороны */
+        .fly-left {
+            animation: floatLeft 16s infinite linear;
+        }
+        .fly-right {
+            animation: floatRight 22s infinite linear;
+        }
+
+        @keyframes floatLeft {
             0% {
-                transform: translateY(0) rotate(0deg) scale(0.8);
+                transform: translateY(0) translateX(0) rotate(0deg) scale(0.85);
                 opacity: 0;
             }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
+            10% { opacity: 0.9; }
+            90% { opacity: 0.9; }
             100% {
-                transform: translateY(-115vh) rotate(360deg) scale(1.1);
+                transform: translateY(-115vh) translateX(-45px) rotate(-180deg) scale(1.1);
+                opacity: 0;
+            }
+        }
+
+        @keyframes floatRight {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg) scale(0.9);
+                opacity: 0;
+            }
+            10% { opacity: 0.9; }
+            90% { opacity: 0.9; }
+            100% {
+                transform: translateY(-115vh) translateX(55px) rotate(220deg) scale(1.05);
                 opacity: 0;
             }
         }
@@ -88,7 +108,8 @@
         .container { 
             width: 100%; 
             max-width: 500px; 
-            z-index: 1; 
+            z-index: 2; /* Контент строго поверх летающих деталей */
+            position: relative;
         }
         header { 
             text-align: center; 
@@ -407,14 +428,14 @@
 </head>
 <body>
 
-    <!-- ИСПРАВЛЕННЫЙ ЗАДНИЙ ФОН: 6 анимированных парящих пузырьков с разной скоростью и задержкой -->
+    <!-- АНИМИРОВАННЫЕ ДЕТАЛИ: Объемные летающие диски с покачиванием -->
     <div class="bg-animation">
-        <div class="bubble" style="left: 8%; width: 45px; height: 45px; animation-delay: 0s; animation-duration: 22s;"></div>
-        <div class="bubble" style="left: 24%; width: 25px; height: 25px; animation-delay: 3s; animation-duration: 16s;"></div>
-        <div class="bubble" style="left: 45%; width: 55px; height: 55px; animation-delay: 1s; animation-duration: 26s;"></div>
-        <div class="bubble" style="left: 62%; width: 20px; height: 20px; animation-delay: 5s; animation-duration: 14s;"></div>
-        <div class="bubble" style="left: 78%; width: 38px; height: 38px; animation-delay: 8s; animation-duration: 20s;"></div>
-        <div class="bubble" style="left: 92%; width: 30px; height: 30px; animation-delay: 2s; animation-duration: 18s;"></div>
+        <div class="floating-pill fly-left" style="left: 7%; width: 34px; height: 34px; animation-delay: 0s; animation-duration: 18s;"></div>
+        <div class="floating-pill fly-right" style="left: 23%; width: 22px; height: 22px; animation-delay: 4s; animation-duration: 15s;"></div>
+        <div class="floating-pill fly-left" style="left: 42%; width: 44px; height: 44px; animation-delay: 1s; animation-duration: 24s;"></div>
+        <div class="floating-pill fly-right" style="left: 58%; width: 18px; height: 18px; animation-delay: 6s; animation-duration: 13s;"></div>
+        <div class="floating-pill fly-left" style="left: 76%; width: 30px; height: 30px; animation-delay: 9s; animation-duration: 19s;"></div>
+        <div class="floating-pill fly-right" style="left: 91%; width: 26px; height: 26px; animation-delay: 2s; animation-duration: 16s;"></div>
     </div>
 
     <div class="container">

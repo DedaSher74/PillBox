@@ -611,6 +611,7 @@
 
         let deviceClockInterval = null;
         let localHour = 0, localMinute = 0, localSecond = 0;
+        let clockInitialized = false; // Флаг инициализации часов
         
         let serverTimeOffset = 0; 
         database.ref(".info/serverTimeOffset").on("value", (snap) => {
@@ -636,6 +637,21 @@
             }
         }
 
+        // Плавный непрерывный таймер времени устройства (без постоянного пересоздания интервала)
+        setInterval(() => {
+            if (!clockInitialized) return;
+            localSecond++;
+            if (localSecond >= 60) {
+                localSecond = 0;
+                localMinute++;
+                if (localMinute >= 60) {
+                    localMinute = 0;
+                    localHour = (localHour + 1) % 24;
+                }
+            }
+            renderLocalClock();
+        }, 1000);
+
         function syncLocalClock(timeStr, lastUpdateMs) {
             if (!timeStr) return;
             const parts = timeStr.split(':');
@@ -657,28 +673,18 @@
                 second = totalSeconds % 60;
             }
 
-            localHour = hour;
-            localMinute = minute;
-            localSecond = second;
+            // Вычисляем общее количество секунд для проверки расхождения
+            const currentLocalTotalSec = localHour * 3600 + localMinute * 60 + localSecond;
+            const incomingTotalSec = hour * 3600 + minute * 60 + second;
 
-            if (deviceClockInterval) {
-                clearInterval(deviceClockInterval);
-            }
-
-            renderLocalClock();
-
-            deviceClockInterval = setInterval(() => {
-                localSecond++;
-                if (localSecond >= 60) {
-                    localSecond = 0;
-                    localMinute++;
-                    if (localMinute >= 60) {
-                        localMinute = 0;
-                        localHour = (localHour + 1) % 24;
-                    }
-                }
+            // Корректируем часы только если они не инициализированы или если рассинхронизация более 2 секунд
+            if (!clockInitialized || Math.abs(currentLocalTotalSec - incomingTotalSec) > 2) {
+                localHour = hour;
+                localMinute = minute;
+                localSecond = second;
+                clockInitialized = true;
                 renderLocalClock();
-            }, 1000);
+            }
         }
 
         function renderLocalClock() {
@@ -754,18 +760,24 @@
                 bTarCheckbox.checked = data.buzzTare !== undefined ? data.buzzTare : true;
             }
 
-            // 1. Получение телефонов
-            currentPhones = data.phones || [];
-            if (currentPhones.length === 0) {
-                if (data.phone1 && data.phone1 !== '+70000000000') currentPhones.push(data.phone1);
-                if (data.phone2 && data.phone2 !== '+70000000000') currentPhones.push(data.phone2);
-                if (data.phone3 && data.phone3 !== '+70000000000') currentPhones.push(data.phone3);
+            // 1. Получение телефонов (ОБНОВЛЕНИЕ ТОЛЬКО ПРИ ИЗМЕНЕНИИ ДАННЫХ, чтобы не терять фокус)
+            let newPhones = data.phones || [];
+            if (newPhones.length === 0) {
+                if (data.phone1 && data.phone1 !== '+70000000000') newPhones.push(data.phone1);
+                if (data.phone2 && data.phone2 !== '+70000000000') newPhones.push(data.phone2);
+                if (data.phone3 && data.phone3 !== '+70000000000') newPhones.push(data.phone3);
             }
-            renderContacts();
+            if (JSON.stringify(newPhones) !== JSON.stringify(currentPhones)) {
+                currentPhones = newPhones;
+                renderContacts();
+            }
 
-            // 2. Получение будильников
-            currentAlarms = data.alarms || [];
-            renderAlarms();
+            // 2. Получение будильников (ОБНОВЛЕНИЕ ТОЛЬКО ПРИ ИЗМЕНЕНИИ ДАННЫХ, чтобы не терять фокус)
+            let newAlarms = data.alarms || [];
+            if (JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms)) {
+                currentAlarms = newAlarms;
+                renderAlarms();
+            }
 
             // 3. Автонапоминание
             const enabledCheckbox = document.getElementById('remindEnabledInput');

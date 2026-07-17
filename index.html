@@ -383,6 +383,12 @@
                 <input type="password" id="authPassword" placeholder="Введите пароль">
             </div>
 
+            <!-- КНОПКА ЗАПОМНИТЬ МЕНЯ -->
+            <div class="checkbox-row" style="margin-top: 5px;">
+                <input type="checkbox" id="rememberMeInput" checked style="cursor: pointer;">
+                <label for="rememberMeInput" style="font-weight: 600; font-size: 14px; cursor: pointer; color: #555;">Запомнить меня на этом устройстве</label>
+            </div>
+
             <button class="btn" style="margin-top: 10px;" onclick="processLogin()">Войти в кабинет</button>
             <div class="link-toggle" onclick="showRegistrationScreen()">Новый прибор? Зарегистрироваться</div>
         </div>
@@ -595,13 +601,12 @@
 
         let userRole = null; 
         let userPhone = "";  
-        let currentDeviceId = ""; // Локальное хранилище ID текущего прибора
+        let currentDeviceId = ""; 
 
         function sanitizePhone(phone) {
             return phone.replace(/\D/g, ''); 
         }
 
-        // Плавный переключатель между экранами
         function showRegistrationScreen() {
             document.getElementById('authPanel').style.display = 'none';
             document.getElementById('regPanel').style.display = 'flex';
@@ -612,7 +617,7 @@
             document.getElementById('authPanel').style.display = 'flex';
         }
 
-        // АВТОМАТИЧЕСКИЙ ПАРСИНГ ПРИГЛАСИТЕЛЬНЫХ ССЫЛОК КУРАТОРА С ДАННЫМИ ДЕВАЙСА
+        // АВТОМАТИЧЕСКАЯ АВТОРИЗАЦИЯ ИЛИ ПАРСИНГ ССЫЛОК ПРИ ЗАПУСКЕ
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const devParam = params.get('device');
@@ -620,11 +625,33 @@
             const phoneParam = params.get('phone');
 
             if (devParam && roleParam === 'relative' && phoneParam) {
+                // Если пришли по СМС-ссылке — игнорируем авто-вход, даем зайти новому куратору
                 document.getElementById('authDeviceId').value = devParam.toLowerCase();
                 document.getElementById('authRole').value = 'relative';
                 document.getElementById('authPhone').value = phoneParam;
                 handleRoleSwitch();
-                showToast("Приглашение распознано! Введите ваш пароль.");
+                showToast("Ссылка куратора распознана. Введите пароль.");
+            } else {
+                // Иначе проверяем, запомнен ли вход на этом устройстве
+                const savedRemember = localStorage.getItem('pillbox_remember') === 'true';
+                if (savedRemember) {
+                    const savedDevId = localStorage.getItem('pillbox_device_id');
+                    const savedRole = localStorage.getItem('pillbox_role');
+                    const savedPhone = localStorage.getItem('pillbox_phone');
+                    const savedPass = localStorage.getItem('pillbox_pass');
+
+                    if (savedDevId && savedRole && savedPass) {
+                        document.getElementById('authDeviceId').value = savedDevId;
+                        document.getElementById('authRole').value = savedRole;
+                        document.getElementById('authPassword').value = savedPass;
+                        if (savedRole === 'relative' && savedPhone) {
+                            document.getElementById('authPhone').value = savedPhone;
+                            handleRoleSwitch();
+                        }
+                        showToast("Автоматический вход...");
+                        processLogin(true); // Тихий вход
+                    }
+                }
             }
         });
 
@@ -673,7 +700,6 @@
             if (pass.length < 4) { showToast("Пароль должен быть не менее 4 символов!"); return; }
             if (pass !== passConfirm) { showToast("Пароли не совпадают!"); return; }
 
-            // Форматирование телефона
             if (!phone.startsWith('+')) {
                 if (phone.startsWith('8')) phone = '+7' + phone.substring(1);
                 else if (phone.startsWith('7')) phone = '+' + phone;
@@ -681,34 +707,37 @@
             }
             if (phone.length < 11 || phone.length > 15) { showToast("Неверный формат телефона!"); return; }
 
-            // Проверка, не зарегистрирован ли этот прибор ранее
             database.ref(`devices/${inputDevId}/auth/patient_pass`).once('value').then((snap) => {
                 if (snap.exists() && snap.val() !== null && snap.val() !== "") {
-                    showToast("Этот прибор уже зарегистрирован! Пожалуйста, войдите в кабинет.");
+                    showToast("Этот прибор уже зарегистрирован!");
                     showAuthScreen();
                     document.getElementById('authDeviceId').value = inputDevId;
                     return;
                 }
 
-                // Запись пароля в защищенный изолированный узел прибора
                 database.ref(`devices/${inputDevId}/auth/patient_pass`).set(pass).then(() => {
-                    // Добавление телефона пациента как первого контакта в системе
                     currentPhones = [phone];
                     database.ref(`devices/${inputDevId}/status/phones`).set(currentPhones);
                     
-                    // Синхронизация контактов с прибором
                     database.ref(`devices/${inputDevId}/commands`).set({
                         action: "save_phones",
                         list: currentPhones,
                         timestamp: firebase.database.ServerValue.TIMESTAMP
                     }).then(() => {
-                        showToast("Регистрация прибора успешно завершена!");
+                        showToast("Регистрация успешно завершена!");
                         userRole = 'patient';
                         currentDeviceId = inputDevId;
                         
+                        // Сохраняем в localStorage при первой успешной регистрации
+                        localStorage.setItem('pillbox_remember', 'true');
+                        localStorage.setItem('pillbox_device_id', currentDeviceId);
+                        localStorage.setItem('pillbox_role', userRole);
+                        localStorage.setItem('pillbox_phone', '');
+                        localStorage.setItem('pillbox_pass', pass);
+
                         document.getElementById('regPanel').style.display = 'none';
                         enterDashboard();
-                        startListeningToDevice(); // Запуск прослушивания только своей ветки
+                        startListeningToDevice(); 
                     });
                 }).catch((err) => {
                     showToast("Ошибка регистрации: " + err.message);
@@ -716,42 +745,53 @@
             });
         }
 
-        // АВТОРИЗАЦИЯ И РАЗГРАНИЧЕНИЕ ПРАВ
-        function processLogin() {
+        // АВТОРИЗАЦИЯ И РАЗГРАНИЧЕНИЕ ПРАВ (С СОХРАНЕНИЕМ СЕССИИ)
+        function processLogin(isSilent = false) {
             const inputDevId = document.getElementById('authDeviceId').value.trim().toLowerCase();
             const role = document.getElementById('authRole').value;
             const password = document.getElementById('authPassword').value.trim();
+            const rememberMe = document.getElementById('rememberMeInput').checked;
             
             if (!inputDevId) {
-                showToast("Введите ID прибора!");
+                if (!isSilent) showToast("Введите ID прибора!");
                 return;
             }
             if (!password) {
-                showToast("Введите пароль!");
+                if (!isSilent) showToast("Введите пароль!");
                 return;
             }
 
             if (role === 'patient') {
                 database.ref(`devices/${inputDevId}/auth/patient_pass`).once('value').then((snap) => {
                     if (!snap.exists()) {
-                        showToast("Прибор с таким ID не зарегистрирован в системе!");
+                        if (!isSilent) showToast("Прибор не зарегистрирован!");
                         return;
                     }
                     const correctPass = snap.val();
                     if (password === correctPass) {
                         userRole = 'patient';
                         currentDeviceId = inputDevId;
-                        showToast("Вход выполнен успешно!");
+                        
+                        // Запоминание сессии Пациента
+                        if (rememberMe) {
+                            localStorage.setItem('pillbox_remember', 'true');
+                            localStorage.setItem('pillbox_device_id', currentDeviceId);
+                            localStorage.setItem('pillbox_role', userRole);
+                            localStorage.setItem('pillbox_phone', '');
+                            localStorage.setItem('pillbox_pass', password);
+                        }
+
+                        if (!isSilent) showToast("Вход выполнен успешно!");
                         enterDashboard();
                         startListeningToDevice();
                     } else {
-                        showToast("Неверный пароль Пациента!");
+                        if (!isSilent) showToast("Неверный пароль Пациента!");
                     }
                 });
             } else {
                 const rawPhone = document.getElementById('authPhone').value.trim();
                 if (!rawPhone) {
-                    showToast("Введите ваш номер телефона!");
+                    if (!isSilent) showToast("Введите ваш номер телефона!");
                     return;
                 }
                 const phoneKey = sanitizePhone(rawPhone);
@@ -762,11 +802,21 @@
                         userRole = 'relative';
                         userPhone = rawPhone;
                         currentDeviceId = inputDevId;
-                        showToast("Вход куратора выполнен!");
+                        
+                        // Запоминание сессии Наблюдателя
+                        if (rememberMe) {
+                            localStorage.setItem('pillbox_remember', 'true');
+                            localStorage.setItem('pillbox_device_id', currentDeviceId);
+                            localStorage.setItem('pillbox_role', userRole);
+                            localStorage.setItem('pillbox_phone', userPhone);
+                            localStorage.setItem('pillbox_pass', password);
+                        }
+
+                        if (!isSilent) showToast("Вход куратора выполнен!");
                         enterDashboard();
                         startListeningToDevice();
                     } else {
-                        showToast("Доступ не настроен или введен неверный пароль!");
+                        if (!isSilent) showToast("Доступ не настроен или пароль неверен!");
                     }
                 });
             }
@@ -791,10 +841,13 @@
         }
 
         function logOut() {
-            // Отключаем прослушивание старой ветки при выходе
             if (currentDeviceId) {
                 database.ref(`devices/${currentDeviceId}/status`).off();
             }
+            
+            // Стираем сессию из хранилища браузера при выходе
+            localStorage.clear();
+
             userRole = null;
             userPhone = "";
             currentDeviceId = "";
@@ -814,6 +867,10 @@
             database.ref(`devices/${currentDeviceId}/auth/patient_pass`).set(newPass).then(() => {
                 showToast("Пароль пациента успешно обновлен!");
                 document.getElementById('newPatientPassword').value = "";
+                // Обновляем пароль в локальном хранилище, если сессия сохранена
+                if (localStorage.getItem('pillbox_remember') === 'true') {
+                    localStorage.setItem('pillbox_pass', newPass);
+                }
             });
         }
 
@@ -875,7 +932,7 @@
                 msg: smsText,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                showToast("Запрос на отправку СМС-приглашения отправлен прибору!");
+                showToast("Запрос на СМС отправлен!");
                 btn.innerText = "Отправить доступ через СМС прибора"; btn.disabled = false;
             }).catch(() => {
                 showToast("Ошибка сети");

@@ -288,6 +288,19 @@
         /* === ЭКРАНЫ И ИНТЕРФЕЙС АВТОРИЗАЦИИ === */
         .auth-screen { display: flex; flex-direction: column; gap: 16px; }
         .panel-view { display: none; }
+        
+        .link-toggle {
+            text-align: center;
+            font-size: 14px;
+            color: var(--primary-color);
+            text-decoration: underline;
+            cursor: pointer;
+            margin-top: 10px;
+            user-select: none;
+        }
+        .link-toggle:hover {
+            color: var(--primary-hover);
+        }
     </style>
 </head>
 <body>
@@ -315,8 +328,13 @@
         <!-- ========================================== -->
         <div id="regPanel" class="card auth-screen" style="display: none;">
             <h1 style="text-align: center; margin-bottom: 5px;">Регистрация прибора</h1>
-            <p style="font-size: 13px; text-align: center; color: #666; margin: 0 0 10px 0;">Это первый запуск таблеточницы. Задайте параметры учетной записи владельца.</p>
+            <p style="font-size: 13px; text-align: center; color: #666; margin: 0 0 10px 0;">Задайте параметры вашей новой таблеточницы для защиты данных.</p>
             
+            <div class="input-group">
+                <label style="font-weight: 600; font-size:14px; color:#555;">Уникальный ID прибора (с экрана):</label>
+                <input type="text" id="regDeviceId" placeholder="Например: da881f">
+            </div>
+
             <div class="input-group">
                 <label style="font-weight: 600; font-size:14px; color:#555;">Номер телефона Пациента:</label>
                 <input type="text" id="regPhone" placeholder="+79991234567">
@@ -333,14 +351,20 @@
             </div>
 
             <button class="btn" style="margin-top: 10px;" onclick="processRegistration()">Зарегистрировать прибор</button>
+            <div class="link-toggle" onclick="showAuthScreen()">Уже зарегистрирован? Войти в кабинет</div>
         </div>
 
         <!-- ========================================== -->
         <!-- ЭКРАН ВХОДА (AUTH SCREEN)                  -->
         <!-- ========================================== -->
-        <div id="authPanel" class="card auth-screen" style="display: none;">
+        <div id="authPanel" class="card auth-screen">
             <h1 style="text-align: center; margin-bottom: 10px;">Вход в систему</h1>
             
+            <div class="input-group">
+                <label style="font-weight: 600; font-size:14px; color:#555;">ID вашего прибора:</label>
+                <input type="text" id="authDeviceId" placeholder="Введите ID прибора (например: da881f)">
+            </div>
+
             <div class="input-group">
                 <label style="font-weight: 600; font-size:14px; color:#555;">Роль пользователя:</label>
                 <select id="authRole" onchange="handleRoleSwitch()">
@@ -360,6 +384,7 @@
             </div>
 
             <button class="btn" style="margin-top: 10px;" onclick="processLogin()">Войти в кабинет</button>
+            <div class="link-toggle" onclick="showRegistrationScreen()">Новый прибор? Зарегистрироваться</div>
         </div>
 
         <!-- ========================================== -->
@@ -368,7 +393,10 @@
         <div id="mainDashboard" class="panel-view">
             <header>
                 <h1 id="dashboardTitle">Таблеточница v1.5</h1>
-                <div class="time-box">
+                <div class="time-box" style="margin-top: 6px; font-size: 12px; color: #5a738e;">
+                    ID устройства: &nbsp;<span id="displayDevId" style="font-weight: bold; color: var(--primary-color);">------</span>
+                </div>
+                <div class="time-box" style="margin-top: 6px;">
                     <span class="online-indicator"></span>
                     Время устройства: &nbsp;<span id="time" style="font-weight: bold; color: #222;">--:--:--</span>
                 </div>
@@ -404,7 +432,8 @@
                     <div id="generatedLinkResult" style="display:none; margin-top: 16px; padding: 12px; border: 1px dashed var(--primary-color); border-radius:10px; background: rgba(0, 150, 136, 0.03);">
                         <p style="font-size: 13px; margin: 0 0 8px 0; font-weight:700; color:var(--primary-color);">Доступ сгенерирован успешно!</p>
                         <input type="text" id="inviteGeneratedUrl" readonly style="padding:8px; font-size:12px; margin-bottom: 8px;">
-                        <button class="btn btn-sm" style="width:100%; height:38px; font-size:13px;" onclick="copyInviteLink()">Скопировать ссылку и пароль</button>
+                        <button class="btn btn-sm" style="width:100%; height:38px; font-size:13px; margin-bottom: 8px;" onclick="copyInviteLink()">Скопировать ссылку и пароль</button>
+                        <button class="btn btn-sm" id="sendInviteSmsBtn" style="width:100%; height:38px; font-size:13px; background-color: #0284c7;" onclick="sendInviteSms()">Отправить доступ через СМС прибора</button>
                     </div>
                 </div>
 
@@ -566,44 +595,37 @@
 
         let userRole = null; 
         let userPhone = "";  
+        let currentDeviceId = ""; // Локальное хранилище ID текущего прибора
 
         function sanitizePhone(phone) {
             return phone.replace(/\D/g, ''); 
         }
 
-        // АВТОМАТИЧЕСКАЯ ПРОВЕРКА РЕГИСТРАЦИИ И ССЫЛОК ПРИ ЗАПУСКЕ
-        window.addEventListener('DOMContentLoaded', () => {
-            // Проверка, есть ли в БД пароль пациента (зарегистрирован ли прибор)
-            database.ref('pillbox/auth/patient_pass').once('value').then((snap) => {
-                const hasPassword = snap.exists() && snap.val() !== null && snap.val() !== "";
-                
-                if (!hasPassword) {
-                    // Прибора нет в БД -> Экран регистрации
-                    document.getElementById('regPanel').style.display = 'flex';
-                    document.getElementById('authPanel').style.display = 'none';
-                    document.getElementById('mainDashboard').style.display = 'none';
-                    showToast("Первый запуск. Зарегистрируйте таблеточницу.");
-                } else {
-                    // Прибор зарегистрирован -> Экран входа
-                    document.getElementById('regPanel').style.display = 'none';
-                    document.getElementById('authPanel').style.display = 'flex';
-                    document.getElementById('mainDashboard').style.display = 'none';
-                    
-                    // Парсинг параметров пригласительной ссылки куратора
-                    const params = new URLSearchParams(window.location.search);
-                    const roleParam = params.get('role');
-                    const phoneParam = params.get('phone');
+        // Плавный переключатель между экранами
+        function showRegistrationScreen() {
+            document.getElementById('authPanel').style.display = 'none';
+            document.getElementById('regPanel').style.display = 'flex';
+        }
 
-                    if (roleParam === 'relative' && phoneParam) {
-                        document.getElementById('authRole').value = 'relative';
-                        document.getElementById('authPhone').value = phoneParam;
-                        handleRoleSwitch();
-                        showToast("Ссылка куратора распознана. Введите пароль.");
-                    }
-                }
-            }).catch((err) => {
-                showToast("Ошибка проверки БД: " + err.message);
-            });
+        function showAuthScreen() {
+            document.getElementById('regPanel').style.display = 'none';
+            document.getElementById('authPanel').style.display = 'flex';
+        }
+
+        // АВТОМАТИЧЕСКИЙ ПАРСИНГ ПРИГЛАСИТЕЛЬНЫХ ССЫЛОК КУРАТОРА С ДАННЫМИ ДЕВАЙСА
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const devParam = params.get('device');
+            const roleParam = params.get('role');
+            const phoneParam = params.get('phone');
+
+            if (devParam && roleParam === 'relative' && phoneParam) {
+                document.getElementById('authDeviceId').value = devParam.toLowerCase();
+                document.getElementById('authRole').value = 'relative';
+                document.getElementById('authPhone').value = phoneParam;
+                handleRoleSwitch();
+                showToast("Приглашение распознано! Введите ваш пароль.");
+            }
         });
 
         function showToast(msg) {
@@ -634,16 +656,19 @@
             }
         }
 
-        // ОБРАБОТКА РЕГИСТРАЦИИ (ПЕРВЫЙ ЗАПУСК)
+        // ОБРАБОТКА РЕГИСТРАЦИИ (ПЕРВЫЙ ЗАПУСК ДЛЯ ЛЮБОГО ДЕВАЙСА)
         function processRegistration() {
+            const devInput = document.getElementById('regDeviceId');
             const phoneInput = document.getElementById('regPhone');
             const passInput = document.getElementById('regPassword');
             const passConfirmInput = document.getElementById('regPasswordConfirm');
 
+            const inputDevId = devInput.value.trim().toLowerCase();
             let phone = phoneInput.value.trim().replace(/\s+/g, '');
             const pass = passInput.value.trim();
             const passConfirm = passConfirmInput.value.trim();
 
+            if (!inputDevId) { showToast("Введите уникальный ID прибора!"); return; }
             if (!phone) { showToast("Введите номер телефона!"); return; }
             if (pass.length < 4) { showToast("Пароль должен быть не менее 4 символов!"); return; }
             if (pass !== passConfirm) { showToast("Пароли не совпадают!"); return; }
@@ -656,46 +681,69 @@
             }
             if (phone.length < 11 || phone.length > 15) { showToast("Неверный формат телефона!"); return; }
 
-            // Запись пароля пациента
-            database.ref('pillbox/auth/patient_pass').set(pass).then(() => {
-                // Добавление телефона пациента как первого контакта в системе
-                currentPhones = [phone];
-                database.ref('pillbox/status/phones').set(currentPhones);
-                
-                // Синхронизация контактов с ESP8266
-                database.ref('pillbox/commands').set({
-                    action: "save_phones",
-                    list: currentPhones,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                }).then(() => {
-                    showToast("Регистрация успешно завершена!");
-                    userRole = 'patient';
+            // Проверка, не зарегистрирован ли этот прибор ранее
+            database.ref(`devices/${inputDevId}/auth/patient_pass`).once('value').then((snap) => {
+                if (snap.exists() && snap.val() !== null && snap.val() !== "") {
+                    showToast("Этот прибор уже зарегистрирован! Пожалуйста, войдите в кабинет.");
+                    showAuthScreen();
+                    document.getElementById('authDeviceId').value = inputDevId;
+                    return;
+                }
+
+                // Запись пароля в защищенный изолированный узел прибора
+                database.ref(`devices/${inputDevId}/auth/patient_pass`).set(pass).then(() => {
+                    // Добавление телефона пациента как первого контакта в системе
+                    currentPhones = [phone];
+                    database.ref(`devices/${inputDevId}/status/phones`).set(currentPhones);
                     
-                    document.getElementById('regPanel').style.display = 'none';
-                    enterDashboard();
+                    // Синхронизация контактов с прибором
+                    database.ref(`devices/${inputDevId}/commands`).set({
+                        action: "save_phones",
+                        list: currentPhones,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    }).then(() => {
+                        showToast("Регистрация прибора успешно завершена!");
+                        userRole = 'patient';
+                        currentDeviceId = inputDevId;
+                        
+                        document.getElementById('regPanel').style.display = 'none';
+                        enterDashboard();
+                        startListeningToDevice(); // Запуск прослушивания только своей ветки
+                    });
+                }).catch((err) => {
+                    showToast("Ошибка регистрации: " + err.message);
                 });
-            }).catch((err) => {
-                showToast("Ошибка регистрации: " + err.message);
             });
         }
 
         // АВТОРИЗАЦИЯ И РАЗГРАНИЧЕНИЕ ПРАВ
         function processLogin() {
+            const inputDevId = document.getElementById('authDeviceId').value.trim().toLowerCase();
             const role = document.getElementById('authRole').value;
             const password = document.getElementById('authPassword').value.trim();
             
+            if (!inputDevId) {
+                showToast("Введите ID прибора!");
+                return;
+            }
             if (!password) {
                 showToast("Введите пароль!");
                 return;
             }
 
             if (role === 'patient') {
-                database.ref('pillbox/auth/patient_pass').once('value').then((snap) => {
+                database.ref(`devices/${inputDevId}/auth/patient_pass`).once('value').then((snap) => {
+                    if (!snap.exists()) {
+                        showToast("Прибор с таким ID не зарегистрирован в системе!");
+                        return;
+                    }
                     const correctPass = snap.val();
                     if (password === correctPass) {
                         userRole = 'patient';
+                        currentDeviceId = inputDevId;
                         showToast("Вход выполнен успешно!");
                         enterDashboard();
+                        startListeningToDevice();
                     } else {
                         showToast("Неверный пароль Пациента!");
                     }
@@ -708,15 +756,17 @@
                 }
                 const phoneKey = sanitizePhone(rawPhone);
 
-                database.ref(`pillbox/auth/relatives/${phoneKey}`).once('value').then((snap) => {
+                database.ref(`devices/${inputDevId}/auth/relatives/${phoneKey}`).once('value').then((snap) => {
                     const correctPass = snap.val();
                     if (correctPass && password === correctPass) {
                         userRole = 'relative';
                         userPhone = rawPhone;
+                        currentDeviceId = inputDevId;
                         showToast("Вход куратора выполнен!");
                         enterDashboard();
+                        startListeningToDevice();
                     } else {
-                        showToast("Доступ не настроен или неверный пароль!");
+                        showToast("Доступ не настроен или введен неверный пароль!");
                     }
                 });
             }
@@ -725,6 +775,7 @@
         function enterDashboard() {
             document.getElementById('authPanel').style.display = 'none';
             document.getElementById('mainDashboard').style.display = 'block';
+            document.getElementById('displayDevId').innerText = currentDeviceId.toUpperCase();
 
             if (userRole === 'patient') {
                 document.getElementById('dashboardTitle').innerText = "Кабинет Пациента";
@@ -740,8 +791,13 @@
         }
 
         function logOut() {
+            // Отключаем прослушивание старой ветки при выходе
+            if (currentDeviceId) {
+                database.ref(`devices/${currentDeviceId}/status`).off();
+            }
             userRole = null;
             userPhone = "";
+            currentDeviceId = "";
             document.getElementById('authPassword').value = "";
             document.getElementById('authPanel').style.display = 'flex';
             document.getElementById('mainDashboard').style.display = 'none';
@@ -755,8 +811,8 @@
                 showToast("Пароль должен содержать минимум 4 символа!");
                 return;
             }
-            database.ref('pillbox/auth/patient_pass').set(newPass).then(() => {
-                showToast("Пароль пациента обновлен!");
+            database.ref(`devices/${currentDeviceId}/auth/patient_pass`).set(newPass).then(() => {
+                showToast("Пароль пациента успешно обновлен!");
                 document.getElementById('newPatientPassword').value = "";
             });
         }
@@ -776,9 +832,9 @@
             }
 
             const phoneKey = sanitizePhone(phone);
-            database.ref(`pillbox/auth/relatives/${phoneKey}`).set(password).then(() => {
+            database.ref(`devices/${currentDeviceId}/auth/relatives/${phoneKey}`).set(password).then(() => {
                 const currentUrl = window.location.origin + window.location.pathname;
-                const generatedLink = `${currentUrl}?role=relative&phone=${encodeURIComponent(phone)}`;
+                const generatedLink = `${currentUrl}?device=${currentDeviceId}&role=relative&phone=${encodeURIComponent(phone)}`;
                 
                 document.getElementById('inviteGeneratedUrl').value = generatedLink;
                 document.getElementById('generatedLinkResult').style.display = 'block';
@@ -795,6 +851,35 @@
                 showToast("Ссылка и пароль скопированы!");
                 document.getElementById('generatedLinkResult').style.display = 'none';
                 document.getElementById('invitePassword').value = "";
+            });
+        }
+
+        function sendInviteSms() {
+            const phone = document.getElementById('inviteSelectContact').value;
+            const password = document.getElementById('invitePassword').value.trim();
+            const urlInput = document.getElementById('inviteGeneratedUrl').value;
+            
+            if (!phone || !password || !urlInput) {
+                showToast("Сначала сгенерируйте ссылку!");
+                return;
+            }
+            
+            const btn = document.getElementById('sendInviteSmsBtn');
+            btn.innerText = "Отправка..."; btn.disabled = true;
+            
+            const smsText = `Dostup k Pillbox. URL: ${urlInput} Pass: ${password}`;
+            
+            database.ref(`devices/${currentDeviceId}/commands`).set({
+                action: "send_invite_sms",
+                phone: phone,
+                msg: smsText,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Запрос на отправку СМС-приглашения отправлен прибору!");
+                btn.innerText = "Отправить доступ через СМС прибора"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка сети");
+                btn.innerText = "Отправить доступ через СМС прибора"; btn.disabled = false;
             });
         }
 
@@ -853,102 +938,106 @@
             document.getElementById('time').innerText = `${hStr}:${mStr}:${sStr}`;
         }
 
-        // Получение статуса в реальном времени
-        database.ref('pillbox/status').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
+        // ДИНАМИЧЕСКИЙ ЗАПУСК ПРОСЛУШИВАНИЯ СВОЕЙ ИЗОЛИРОВАННОЙ ВЕТКИ БАЗЫ ДАННЫХ
+        function startListeningToDevice() {
+            if (!currentDeviceId) return;
 
-            document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
-            
-            if (data.time) {
-                syncLocalClock(data.time, data.lastUpdate);
-            } else {
-                document.getElementById('time').innerText = '--:--:--';
-            }
+            database.ref(`devices/${currentDeviceId}/status`).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
 
-            const warningBanner = document.getElementById('cupWarningBanner');
-            if (data.cupMissing === true) {
-                warningBanner.style.display = 'block';
-                warningBanner.className = 'alert-banner'; 
+                document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
                 
-                if (data.cupStage === 1) {
-                    warningBanner.classList.add('banner-stage-1');
-                    warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов более 1 минуты. Пожалуйста, верните ее на место.';
-                } else if (data.cupStage === 2) {
-                    warningBanner.classList.add('banner-stage-2');
-                    warningBanner.innerHTML = '🔊 Внимание! Чаша отсутствует более 3 минут! На таблеточнице включен звуковой сигнал.';
-                } else if (data.cupStage === 3) {
-                    warningBanner.classList.add('banner-stage-3');
-                    warningBanner.innerHTML = '✉️ Критическая ситуация! Чаша отсутствует более 5 минут! Родственникам отправлены тревожные СМС.';
+                if (data.time) {
+                    syncLocalClock(data.time, data.lastUpdate);
                 } else {
-                    warningBanner.classList.add('banner-stage-1');
-                    warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов!';
+                    document.getElementById('time').innerText = '--:--:--';
                 }
-            } else {
-                warningBanner.style.display = 'none';
-            }
 
-            if (Date.now() < ignoreIncomingUpdatesUntil) {
-                return; 
-            }
+                const warningBanner = document.getElementById('cupWarningBanner');
+                if (data.cupMissing === true) {
+                    warningBanner.style.display = 'block';
+                    warningBanner.className = 'alert-banner'; 
+                    
+                    if (data.cupStage === 1) {
+                        warningBanner.classList.add('banner-stage-1');
+                        warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов более 1 минуты. Пожалуйста, верните ее на место.';
+                    } else if (data.cupStage === 2) {
+                        warningBanner.classList.add('banner-stage-2');
+                        warningBanner.innerHTML = '🔊 Внимание! Чаша отсутствует более 3 минут! На таблеточнице включен звуковой сигнал.';
+                    } else if (data.cupStage === 3) {
+                        warningBanner.classList.add('banner-stage-3');
+                        warningBanner.innerHTML = '✉️ Критическая ситуация! Чаша отсутствует более 5 минут! Родственникам отправлены тревожные СМС.';
+                    } else {
+                        warningBanner.classList.add('banner-stage-1');
+                        warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов!';
+                    }
+                } else {
+                    warningBanner.style.display = 'none';
+                }
 
-            if (userRole === 'patient') {
-                const smsCheckbox = document.getElementById('smsEnabledInput');
-                if (document.activeElement !== smsCheckbox) {
-                    smsCheckbox.checked = data.smsEnabled !== undefined ? data.smsEnabled : true;
+                if (Date.now() < ignoreIncomingUpdatesUntil) {
+                    return; 
                 }
-                
-                const bAlmCheckbox = document.getElementById('buzzAlarmInput');
-                if (document.activeElement !== bAlmCheckbox) {
-                    bAlmCheckbox.checked = data.buzzAlarm !== undefined ? data.buzzAlarm : true;
-                }
-                
-                const bBtnCheckbox = document.getElementById('buzzButtonsInput');
-                if (document.activeElement !== bBtnCheckbox) {
-                    bBtnCheckbox.checked = data.buzzButtons !== undefined ? data.buzzButtons : true;
-                }
-                
-                const bItkCheckbox = document.getElementById('buzzIntakeInput');
-                if (document.activeElement !== bItkCheckbox) {
-                    bItkCheckbox.checked = data.buzzIntake !== undefined ? data.buzzIntake : true;
-                }
-                
-                const bTarCheckbox = document.getElementById('buzzTareInput');
-                if (document.activeElement !== bTarCheckbox) {
-                    bTarCheckbox.checked = data.buzzTare !== undefined ? data.buzzTare : true;
-                }
-            }
 
-            let newPhones = data.phones || [];
-            if (newPhones.length === 0) {
-                if (data.phone1 && data.phone1 !== '+70000000000') newPhones.push(data.phone1);
-                if (data.phone2 && data.phone2 !== '+70000000000') newPhones.push(data.phone2);
-                if (data.phone3 && data.phone3 !== '+70000000000') newPhones.push(data.phone3);
-            }
-            if (JSON.stringify(newPhones) !== JSON.stringify(currentPhones)) {
-                currentPhones = newPhones;
-                renderContacts();
-                updateInviteContactDropdown();
-            }
-
-            let newAlarms = data.alarms || [];
-            if (JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms)) {
-                currentAlarms = newAlarms;
-                renderAlarms();
-            }
-
-            if (userRole === 'patient') {
-                const enabledCheckbox = document.getElementById('remindEnabledInput');
-                if (document.activeElement !== enabledCheckbox) {
-                    enabledCheckbox.checked = data.remindEnabled || false;
-                    toggleReminderView(false); 
+                if (userRole === 'patient') {
+                    const smsCheckbox = document.getElementById('smsEnabledInput');
+                    if (document.activeElement !== smsCheckbox) {
+                        smsCheckbox.checked = data.smsEnabled !== undefined ? data.smsEnabled : true;
+                    }
+                    
+                    const bAlmCheckbox = document.getElementById('buzzAlarmInput');
+                    if (document.activeElement !== bAlmCheckbox) {
+                        bAlmCheckbox.checked = data.buzzAlarm !== undefined ? data.buzzAlarm : true;
+                    }
+                    
+                    const bBtnCheckbox = document.getElementById('buzzButtonsInput');
+                    if (document.activeElement !== bBtnCheckbox) {
+                        bBtnCheckbox.checked = data.buzzButtons !== undefined ? data.buzzButtons : true;
+                    }
+                    
+                    const bItkCheckbox = document.getElementById('buzzIntakeInput');
+                    if (document.activeElement !== bItkCheckbox) {
+                        bItkCheckbox.checked = data.buzzIntake !== undefined ? data.buzzIntake : true;
+                    }
+                    
+                    const bTarCheckbox = document.getElementById('buzzTareInput');
+                    if (document.activeElement !== bTarCheckbox) {
+                        bTarCheckbox.checked = data.buzzTare !== undefined ? data.buzzTare : true;
+                    }
                 }
-                const timeInput = document.getElementById('remindTimeInput');
-                if (document.activeElement !== timeInput) {
-                    timeInput.value = data.remindTime || '12:00';
+
+                let newPhones = data.phones || [];
+                if (newPhones.length === 0) {
+                    if (data.phone1 && data.phone1 !== '+70000000000') newPhones.push(data.phone1);
+                    if (data.phone2 && data.phone2 !== '+70000000000') newPhones.push(data.phone2);
+                    if (data.phone3 && data.phone3 !== '+70000000000') newPhones.push(data.phone3);
                 }
-            }
-        });
+                if (JSON.stringify(newPhones) !== JSON.stringify(currentPhones)) {
+                    currentPhones = newPhones;
+                    renderContacts();
+                    updateInviteContactDropdown();
+                }
+
+                let newAlarms = data.alarms || [];
+                if (JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms)) {
+                    currentAlarms = newAlarms;
+                    renderAlarms();
+                }
+
+                if (userRole === 'patient') {
+                    const enabledCheckbox = document.getElementById('remindEnabledInput');
+                    if (document.activeElement !== enabledCheckbox) {
+                        enabledCheckbox.checked = data.remindEnabled || false;
+                        toggleReminderView(false); 
+                    }
+                    const timeInput = document.getElementById('remindTimeInput');
+                    if (document.activeElement !== timeInput) {
+                        timeInput.value = data.remindTime || '12:00';
+                    }
+                }
+            });
+        }
 
         function saveDeviceConfig() {
             const smsEnabled = document.getElementById('smsEnabledInput').checked;
@@ -959,7 +1048,7 @@
             
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
             
-            database.ref('pillbox/commands').set({
+            database.ref(`devices/${currentDeviceId}/commands`).set({
                 action: "save_config",
                 smsEnabled: smsEnabled,
                 buzzAlarm: buzzAlarm,
@@ -1102,7 +1191,7 @@
         }
 
         function syncPhones() {
-            database.ref('pillbox/commands').set({
+            database.ref(`devices/${currentDeviceId}/commands`).set({
                 action: "save_phones",
                 list: currentPhones,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -1134,7 +1223,7 @@
 
         function syncAlarms() {
             const timeList = currentAlarms.map(a => a.time);
-            database.ref('pillbox/commands').set({
+            database.ref(`devices/${currentDeviceId}/commands`).set({
                 action: "save_alarms",
                 list: timeList,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -1162,7 +1251,7 @@
         function disableReminderOnServer() {
             const time = document.getElementById('remindTimeInput').value || '12:00';
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            database.ref('pillbox/commands').set({
+            database.ref(`devices/${currentDeviceId}/commands`).set({
                 action: "save_reminder",
                 time: time,
                 enabled: false,
@@ -1181,7 +1270,7 @@
             btn.innerText = "Сохранение..."; btn.disabled = true;
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
 
-            database.ref('pillbox/commands').set({
+            database.ref(`devices/${currentDeviceId}/commands`).set({
                 action: "save_reminder",
                 time: time,
                 enabled: enabled,
@@ -1200,7 +1289,7 @@
             const text = document.getElementById(btnId).value;
             if (!text) { showToast("Введите текст сообщения!"); return; }
 
-            database.ref('pillbox/commands').set({
+            database.ref(`devices/${currentDeviceId}/commands`).set({
                 action: "send_now_sms",
                 msg: text,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -1214,7 +1303,7 @@
         function triggerTare() {
             const btn = document.getElementById('tareBtn');
             btn.innerText = "Обнуление весов..."; btn.disabled = true;
-            database.ref('pillbox/commands').set({
+            database.ref(`devices/${currentDeviceId}/commands`).set({
                 action: "tare",
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {

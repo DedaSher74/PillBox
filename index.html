@@ -268,7 +268,7 @@
         .checkbox-row { display: flex; align-items: center; gap: 12px; margin: 6px 0; font-size: 15px; }
         input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--primary-color); }
 
-        #reminderConfig { display: none; border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px; }
+        #reminderConfig { border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px; }
 
         #toast { 
             visibility: hidden; min-width: 260px; background-color: #2c3e50; color: #fff; text-align: center; border-radius: 10px; padding: 16px; position: fixed; z-index: 999; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transition: opacity 0.2s linear; opacity: 0; 
@@ -311,9 +311,34 @@
     <div class="container">
         
         <!-- ========================================== -->
+        <!-- ЭКРАН РЕГИСТРАЦИИ (REGISTRATION SCREEN)    -->
+        <!-- ========================================== -->
+        <div id="regPanel" class="card auth-screen" style="display: none;">
+            <h1 style="text-align: center; margin-bottom: 5px;">Регистрация прибора</h1>
+            <p style="font-size: 13px; text-align: center; color: #666; margin: 0 0 10px 0;">Это первый запуск таблеточницы. Задайте параметры учетной записи владельца.</p>
+            
+            <div class="input-group">
+                <label style="font-weight: 600; font-size:14px; color:#555;">Номер телефона Пациента:</label>
+                <input type="text" id="regPhone" placeholder="+79991234567">
+            </div>
+
+            <div class="input-group">
+                <label style="font-weight: 600; font-size:14px; color:#555;">Придумайте пароль Пациента:</label>
+                <input type="password" id="regPassword" placeholder="Минимум 4 символа">
+            </div>
+
+            <div class="input-group">
+                <label style="font-weight: 600; font-size:14px; color:#555;">Повторите пароль:</label>
+                <input type="password" id="regPasswordConfirm" placeholder="Повторите пароль">
+            </div>
+
+            <button class="btn" style="margin-top: 10px;" onclick="processRegistration()">Зарегистрировать прибор</button>
+        </div>
+
+        <!-- ========================================== -->
         <!-- ЭКРАН ВХОДА (AUTH SCREEN)                  -->
         <!-- ========================================== -->
-        <div id="authPanel" class="card auth-screen">
+        <div id="authPanel" class="card auth-screen" style="display: none;">
             <h1 style="text-align: center; margin-bottom: 10px;">Вход в систему</h1>
             
             <div class="input-group">
@@ -324,7 +349,6 @@
                 </select>
             </div>
 
-            <!-- Поле телефона (отображается только для родственников) -->
             <div id="authPhoneGroup" class="input-group" style="display: none;">
                 <label style="font-weight: 600; font-size:14px; color:#555;">Ваш номер телефона:</label>
                 <input type="text" id="authPhone" placeholder="+79991234567">
@@ -357,7 +381,6 @@
             <div class="card">
                 <h2>Текущий вес таблеток</h2>
                 <div class="weight-display" id="weight">0.00 г</div>
-                <!-- Сброс веса доступен только Пациенту -->
                 <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес</button>
             </div>
 
@@ -400,7 +423,7 @@
                             </div>
                             
                             <hr style="border:0; border-top: 1px solid var(--border-color); margin:12px 0;">
-                            <h3 style="font-size:14px; margin:0 0 6px 0; color:#555;">Изменение паролей доступа к сайту:</h3>
+                            <h3 style="font-size:14px; margin:0 0 6px 0; color:#555;">Изменение пароля доступа Пациента:</h3>
                             <div class="input-row" style="margin-bottom: 10px;">
                                 <input type="password" id="newPatientPassword" placeholder="Новый пароль Пациента">
                                 <button class="btn btn-sm" onclick="changePatientPassword()">Сменить</button>
@@ -461,7 +484,7 @@
                             <label for="remindEnabledInput" style="font-weight: 600; cursor:pointer;">Включить автонапоминание</label>
                         </div>
                         
-                        <div id="reminderConfig">
+                        <div id="reminderConfig" style="display: none;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                                 <span style="font-size: 15px;">Время отправки:</span>
                                 <input type="time" id="remindTimeInput">
@@ -544,23 +567,43 @@
         let userRole = null; 
         let userPhone = "";  
 
-        // Вспомогательная функция очистки номеров для Firebase ключей
         function sanitizePhone(phone) {
             return phone.replace(/\D/g, ''); 
         }
 
-        // Автоопределение параметров ссылки (роль и телефон)
+        // АВТОМАТИЧЕСКАЯ ПРОВЕРКА РЕГИСТРАЦИИ И ССЫЛОК ПРИ ЗАПУСКЕ
         window.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            const roleParam = params.get('role');
-            const phoneParam = params.get('phone');
+            // Проверка, есть ли в БД пароль пациента (зарегистрирован ли прибор)
+            database.ref('pillbox/auth/patient_pass').once('value').then((snap) => {
+                const hasPassword = snap.exists() && snap.val() !== null && snap.val() !== "";
+                
+                if (!hasPassword) {
+                    // Прибора нет в БД -> Экран регистрации
+                    document.getElementById('regPanel').style.display = 'flex';
+                    document.getElementById('authPanel').style.display = 'none';
+                    document.getElementById('mainDashboard').style.display = 'none';
+                    showToast("Первый запуск. Зарегистрируйте таблеточницу.");
+                } else {
+                    // Прибор зарегистрирован -> Экран входа
+                    document.getElementById('regPanel').style.display = 'none';
+                    document.getElementById('authPanel').style.display = 'flex';
+                    document.getElementById('mainDashboard').style.display = 'none';
+                    
+                    // Парсинг параметров пригласительной ссылки куратора
+                    const params = new URLSearchParams(window.location.search);
+                    const roleParam = params.get('role');
+                    const phoneParam = params.get('phone');
 
-            if (roleParam === 'relative' && phoneParam) {
-                document.getElementById('authRole').value = 'relative';
-                document.getElementById('authPhone').value = phoneParam;
-                handleRoleSwitch();
-                showToast("Ссылка куратора распознана. Введите ваш пароль.");
-            }
+                    if (roleParam === 'relative' && phoneParam) {
+                        document.getElementById('authRole').value = 'relative';
+                        document.getElementById('authPhone').value = phoneParam;
+                        handleRoleSwitch();
+                        showToast("Ссылка куратора распознана. Введите пароль.");
+                    }
+                }
+            }).catch((err) => {
+                showToast("Ошибка проверки БД: " + err.message);
+            });
         });
 
         function showToast(msg) {
@@ -591,6 +634,51 @@
             }
         }
 
+        // ОБРАБОТКА РЕГИСТРАЦИИ (ПЕРВЫЙ ЗАПУСК)
+        function processRegistration() {
+            const phoneInput = document.getElementById('regPhone');
+            const passInput = document.getElementById('regPassword');
+            const passConfirmInput = document.getElementById('regPasswordConfirm');
+
+            let phone = phoneInput.value.trim().replace(/\s+/g, '');
+            const pass = passInput.value.trim();
+            const passConfirm = passConfirmInput.value.trim();
+
+            if (!phone) { showToast("Введите номер телефона!"); return; }
+            if (pass.length < 4) { showToast("Пароль должен быть не менее 4 символов!"); return; }
+            if (pass !== passConfirm) { showToast("Пароли не совпадают!"); return; }
+
+            // Форматирование телефона
+            if (!phone.startsWith('+')) {
+                if (phone.startsWith('8')) phone = '+7' + phone.substring(1);
+                else if (phone.startsWith('7')) phone = '+' + phone;
+                else phone = '+7' + phone;
+            }
+            if (phone.length < 11 || phone.length > 15) { showToast("Неверный формат телефона!"); return; }
+
+            // Запись пароля пациента
+            database.ref('pillbox/auth/patient_pass').set(pass).then(() => {
+                // Добавление телефона пациента как первого контакта в системе
+                currentPhones = [phone];
+                database.ref('pillbox/status/phones').set(currentPhones);
+                
+                // Синхронизация контактов с ESP8266
+                database.ref('pillbox/commands').set({
+                    action: "save_phones",
+                    list: currentPhones,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    showToast("Регистрация успешно завершена!");
+                    userRole = 'patient';
+                    
+                    document.getElementById('regPanel').style.display = 'none';
+                    enterDashboard();
+                });
+            }).catch((err) => {
+                showToast("Ошибка регистрации: " + err.message);
+            });
+        }
+
         // АВТОРИЗАЦИЯ И РАЗГРАНИЧЕНИЕ ПРАВ
         function processLogin() {
             const role = document.getElementById('authRole').value;
@@ -602,25 +690,17 @@
             }
 
             if (role === 'patient') {
-                // Вход пациента
                 database.ref('pillbox/auth/patient_pass').once('value').then((snap) => {
-                    let correctPass = snap.val();
-                    if (!correctPass) {
-                        // Первичная инициализация пароля, если его еще нет в БД
-                        correctPass = "1234";
-                        database.ref('pillbox/auth/patient_pass').set("1234");
-                    }
-                    
+                    const correctPass = snap.val();
                     if (password === correctPass) {
                         userRole = 'patient';
-                        showToast("Успешный вход в кабинет Пациента!");
+                        showToast("Вход выполнен успешно!");
                         enterDashboard();
                     } else {
                         showToast("Неверный пароль Пациента!");
                     }
                 });
             } else {
-                // Вход куратора (родственника)
                 const rawPhone = document.getElementById('authPhone').value.trim();
                 if (!rawPhone) {
                     showToast("Введите ваш номер телефона!");
@@ -633,10 +713,10 @@
                     if (correctPass && password === correctPass) {
                         userRole = 'relative';
                         userPhone = rawPhone;
-                        showToast("Успешный вход в кабинет Родственника!");
+                        showToast("Вход куратора выполнен!");
                         enterDashboard();
                     } else {
-                        showToast("Доступ не найден или неверный пароль куратора!");
+                        showToast("Доступ не настроен или неверный пароль!");
                     }
                 });
             }
@@ -655,7 +735,7 @@
                 document.getElementById('dashboardTitle').innerText = "Кабинет Наблюдателя";
                 document.getElementById('patientBlocks').style.display = 'none';
                 document.getElementById('relativeBlocks').style.display = 'block';
-                document.getElementById('tareBtn').style.display = 'none'; // Скрываем сброс веса
+                document.getElementById('tareBtn').style.display = 'none'; 
             }
         }
 
@@ -676,7 +756,7 @@
                 return;
             }
             database.ref('pillbox/auth/patient_pass').set(newPass).then(() => {
-                showToast("Пароль пациента успешно обновлен!");
+                showToast("Пароль пациента обновлен!");
                 document.getElementById('newPatientPassword').value = "";
             });
         }
@@ -702,7 +782,7 @@
                 
                 document.getElementById('inviteGeneratedUrl').value = generatedLink;
                 document.getElementById('generatedLinkResult').style.display = 'block';
-                showToast("Доступ в базу данных записан!");
+                showToast("Доступ записан!");
             });
         }
 
@@ -712,7 +792,7 @@
             const textToCopy = `Ссылка для входа: ${urlInput.value}\nВаш пароль: ${password}`;
             
             navigator.clipboard.writeText(textToCopy).then(() => {
-                showToast("Ссылка и пароль скопированы в буфер!");
+                showToast("Ссылка и пароль скопированы!");
                 document.getElementById('generatedLinkResult').style.display = 'none';
                 document.getElementById('invitePassword').value = "";
             });
@@ -786,7 +866,6 @@
                 document.getElementById('time').innerText = '--:--:--';
             }
 
-            // Многоуровневое управление отображением тревожного баннера
             const warningBanner = document.getElementById('cupWarningBanner');
             if (data.cupMissing === true) {
                 warningBanner.style.display = 'block';
@@ -813,7 +892,6 @@
                 return; 
             }
 
-            // Синхронизация переключателей (только для Пациента)
             if (userRole === 'patient') {
                 const smsCheckbox = document.getElementById('smsEnabledInput');
                 if (document.activeElement !== smsCheckbox) {
@@ -841,7 +919,6 @@
                 }
             }
 
-            // 1. Получение телефонов
             let newPhones = data.phones || [];
             if (newPhones.length === 0) {
                 if (data.phone1 && data.phone1 !== '+70000000000') newPhones.push(data.phone1);
@@ -854,14 +931,12 @@
                 updateInviteContactDropdown();
             }
 
-            // 2. Получение будильников
             let newAlarms = data.alarms || [];
             if (JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms)) {
                 currentAlarms = newAlarms;
                 renderAlarms();
             }
 
-            // 3. Автонапоминание (только для Пациента)
             if (userRole === 'patient') {
                 const enabledCheckbox = document.getElementById('remindEnabledInput');
                 if (document.activeElement !== enabledCheckbox) {
@@ -875,7 +950,6 @@
             }
         });
 
-        // Отправка системной конфигурации на устройство
         function saveDeviceConfig() {
             const smsEnabled = document.getElementById('smsEnabledInput').checked;
             const buzzAlarm = document.getElementById('buzzAlarmInput').checked;
@@ -900,12 +974,10 @@
             });
         }
 
-        // Обновление селектора контактов в генераторе ссылок Пациента
         function updateInviteContactDropdown() {
             const select = document.getElementById('inviteSelectContact');
             select.innerHTML = '<option value="">-- Выберите телефон куратора --</option>';
             
-            // Начиная со второго элемента (индекс 1 и далее), так как первый контакт — сам Пациент
             const relativeContacts = currentPhones.slice(1);
             
             if (relativeContacts.length === 0) {
@@ -917,12 +989,10 @@
             }
         }
 
-        // Отрисовка списка контактов
         function renderContacts() {
             const listDiv = document.getElementById('contactsList');
             const relativeListDiv = document.getElementById('relativeContactsList');
             
-            // Очищаем оба блока
             listDiv.innerHTML = '';
             relativeListDiv.innerHTML = '';
 
@@ -934,7 +1004,6 @@
                 currentPhones.forEach((phone, idx) => {
                     const label = idx === 0 ? "Пациент" : `Куратор ${idx}`;
                     
-                    // Блок Пациента (с кнопкой удаления)
                     listDiv.innerHTML += `
                         <div class="list-item">
                             <div>
@@ -945,7 +1014,6 @@
                         </div>
                     `;
 
-                    // Блок родственника (только для чтения)
                     relativeListDiv.innerHTML += `
                         <div class="list-item">
                             <div>
@@ -958,12 +1026,10 @@
             }
         }
 
-        // Отрисовка списка будильников
         function renderAlarms() {
             const listDiv = document.getElementById('alarmsList');
             const relativeListDiv = document.getElementById('relativeAlarmsList');
             
-            // Очищаем оба блока
             listDiv.innerHTML = '';
             relativeListDiv.innerHTML = '';
 
@@ -976,7 +1042,6 @@
                     const statusClass = alarm.taken ? 'status taken' : 'status pending';
                     const statusText = alarm.taken ? 'Принято' : 'Ожидает';
                     
-                    // Блок Пациента (редактируемый)
                     listDiv.innerHTML += `
                         <div class="list-item">
                             <div style="gap: 8px;">
@@ -988,7 +1053,6 @@
                         </div>
                     `;
 
-                    // Блок родственника (только чтение, без редактирования)
                     relativeListDiv.innerHTML += `
                         <div class="list-item">
                             <div style="gap: 8px;">
@@ -1131,7 +1195,6 @@
             });
         }
 
-        // Отправка ручного СМС (работает и для Пациента, и для Родственника)
         function sendManualSms(isRelative = false) {
             const btnId = isRelative ? 'relativeManualSmsText' : 'manualSmsText';
             const text = document.getElementById(btnId).value;

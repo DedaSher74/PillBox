@@ -164,7 +164,7 @@
             border: 1px solid rgba(0, 150, 136, 0.08);
         }
 
-        /* АНИМАЦИЯ 1: Пульсирующий индикатор связи */
+        /* АНИМАЦИЯ: Пульсирующий индикатор связи */
         .online-indicator {
             display: inline-block;
             width: 8px;
@@ -207,7 +207,7 @@
             font-weight: 700;
         }
 
-        /* АНИМАЦИЯ 2: Шиммер-эффект на вес таблеток */
+        /* АНИМАЦИЯ: Шиммер-эффект на вес таблеток */
         .weight-display { 
             font-size: 48px; 
             font-weight: 800; 
@@ -229,7 +229,7 @@
             }
         }
         
-        /* АНИМАЦИЯ 3: Плавное всплывание элементов списков */
+        /* АНИМАЦИЯ: Плавное всплывание элементов списков */
         .list-item {
             display: flex;
             justify-content: space-between;
@@ -296,7 +296,7 @@
             color: var(--success-color); 
         }
 
-        /* АНИМАЦИЯ 5: Пульсирующий статус ожидания */
+        /* АНИМАЦИЯ: Пульсирующий статус ожидания */
         .status.pending { 
             background-color: rgba(198,40,40,0.1); 
             color: var(--pending-color); 
@@ -320,11 +320,10 @@
             display: flex;
             gap: 10px;
         }
-        
-        /* === РАЗДЕЛЕНИЕ И ОПТИМИЗАЦИЯ СТИЛЕЙ ПОЛЕЙ ВВОДА === */
         input[type="text"], input[type="time"] { 
             width: 100%; 
             box-sizing: border-box; 
+            padding: 14px; 
             border-radius: 10px; 
             border: 1.5px solid rgba(0, 150, 136, 0.25); 
             background: #ffffff;
@@ -334,32 +333,15 @@
             outline: none;
             transition: border-color 0.15s ease;
         }
-        
-        input[type="text"] {
-            padding: 14px; 
-        }
-        
-        /* Задаем фиксированную высоту и уменьшенный вертикальный отступ для поля времени */
-        input[type="time"] {
-            padding: 8px 14px; 
-            height: 48px; 
-            width: auto;
-            flex-grow: 1;
-        }
-        
         input[type="text"]:focus, input[type="time"]:focus {
             border-color: var(--primary-color);
         }
-
-        /* Сброс внутренних отступов WebKit-браузеров во избежание сдвига колеса прокрутки */
-        input[type="time"]::-webkit-datetime-edit {
-            padding: 0px;
-        }
-        input[type="time"]::-webkit-datetime-edit-fields-wrapper {
-            padding: 0px;
+        input[type="time"] {
+            width: auto;
+            flex-grow: 1;
         }
 
-        /* АНИМАЦИЯ 4: Интерактивные парящие кнопки */
+        /* АНИМАЦИЯ: Интерактивные парящие кнопки */
         .btn { 
             display: inline-flex; 
             align-items: center; 
@@ -389,7 +371,6 @@
         .btn-sm {
             padding: 14px 22px;
             width: auto;
-            height: 48px; /* Выравнивание по высоте с полем ввода */
         }
         
         .checkbox-row { 
@@ -726,7 +707,7 @@
                 document.getElementById('time').innerText = '--:--:--';
             }
 
-            // Многоуровневое управление отображением тревожного баннера
+            // Многоуровневое управление отображением предупреждающего баннера
             const warningBanner = document.getElementById('cupWarningBanner');
             if (data.cupMissing === true) {
                 warningBanner.style.display = 'block';

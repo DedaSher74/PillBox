@@ -10,10 +10,10 @@
     
     <style>
         :root {
-            --bg-color: #eef5f6; /* Ровный матовый фон */
+            --bg-color: #eef5f6; 
             --card-bg: rgba(255, 255, 255, 0.96); 
             --text-color: #2c3e50;
-            --primary-color: #009688; /* Бирюзовый */
+            --primary-color: #009688; 
             --primary-hover: #00796b;
             --success-color: #2e7d32; 
             --pending-color: #c62828;
@@ -33,7 +33,7 @@
             box-sizing: border-box;
         }
 
-        /* === КОНТЕЙНЕР ДЛЯ ЛЕТАЮЩИХ ТАБЛЕТОК === */
+        /* === КРАСИВЫЕ ФОНОВЫЕ ТАБЛЕТКИ === */
         .bg-animation {
             position: fixed;
             top: 0;
@@ -45,7 +45,6 @@
             pointer-events: none;
         }
         
-        /* === ТИП 1: Двухцветная капсула === */
         .capsule {
             position: absolute;
             bottom: -70px;
@@ -67,7 +66,6 @@
             border-radius: 4px;
         }
 
-        /* === ТИП 2: Круглая таблетка с риской === */
         .tablet {
             position: absolute;
             bottom: -70px;
@@ -235,7 +233,6 @@
         .input-group { display: flex; flex-direction: column; gap: 12px; }
         .input-row { display: flex; gap: 10px; }
         
-        /* === ОПТИМИЗАЦИЯ СТИЛЕЙ ПОЛЕЙ ВВОДА === */
         input[type="text"], input[type="password"], input[type="time"], select { 
             width: 100%; 
             box-sizing: border-box; 
@@ -255,8 +252,6 @@
         input[type="text"]:focus, input[type="password"]:focus, input[type="time"]:focus, select:focus {
             border-color: var(--primary-color);
         }
-        input[type="time"]::-webkit-datetime-edit { padding: 0px; }
-        input[type="time"]::-webkit-datetime-edit-fields-wrapper { padding: 0px; }
 
         .btn { 
             display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background-color 0.2s ease; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0, 150, 136, 0.15);
@@ -285,7 +280,6 @@
         .banner-stage-2 { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; animation: bannerPulse 1.8s infinite; }
         .banner-stage-3 { background-color: #7f1d1d; color: #fee2e2; border: 1px solid #991b1b; box-shadow: 0 6px 20px rgba(127, 29, 29, 0.4); }
 
-        /* === ЭКРАНЫ И ИНТЕРФЕЙС АВТОРИЗАЦИИ === */
         .auth-screen { display: flex; flex-direction: column; gap: 16px; }
         .panel-view { display: none; }
         
@@ -305,7 +299,6 @@
 </head>
 <body>
 
-    <!-- ЗАДНИЙ ФОН: 12 летающих элементов -->
     <div class="bg-animation">
         <div class="capsule fly-left" style="left: 6%; animation-delay: 0s; animation-duration: 22s;"></div>
         <div class="capsule fly-right" style="left: 21%; animation-delay: 5s; animation-duration: 17s; width: 12px; height: 28px;"></div>
@@ -323,12 +316,10 @@
 
     <div class="container">
         
-        <!-- ========================================== -->
-        <!-- ЭКРАН РЕГИСТРАЦИИ (REGISTRATION SCREEN)    -->
-        <!-- ========================================== -->
+        <!-- ЭКРАН РЕГИСТРАЦИИ -->
         <div id="regPanel" class="card auth-screen" style="display: none;">
             <h1 style="text-align: center; margin-bottom: 5px;">Регистрация прибора</h1>
-            <p style="font-size: 13px; text-align: center; color: #666; margin: 0 0 10px 0;">Задайте параметры вашей новой таблеточницы для защиты данных.</p>
+            <p style="font-size: 13px; text-align: center; color: #666; margin: 0 0 10px 0;">Задайте параметры вашей новой таблеточницы.</p>
             
             <div class="input-group">
                 <label style="font-weight: 600; font-size:14px; color:#555;">Уникальный ID прибора (с экрана):</label>
@@ -354,9 +345,7 @@
             <div class="link-toggle" onclick="showAuthScreen()">Уже зарегистрирован? Войти в кабинет</div>
         </div>
 
-        <!-- ========================================== -->
-        <!-- ЭКРАН ВХОДА (AUTH SCREEN)                  -->
-        <!-- ========================================== -->
+        <!-- ЭКРАН ВХОДА -->
         <div id="authPanel" class="card auth-screen">
             <h1 style="text-align: center; margin-bottom: 10px;">Вход в систему</h1>
             
@@ -383,7 +372,6 @@
                 <input type="password" id="authPassword" placeholder="Введите пароль">
             </div>
 
-            <!-- КНОПКА ЗАПОМНИТЬ МЕНЯ -->
             <div class="checkbox-row" style="margin-top: 5px;">
                 <input type="checkbox" id="rememberMeInput" checked style="cursor: pointer;">
                 <label for="rememberMeInput" style="font-weight: 600; font-size: 14px; cursor: pointer; color: #555;">Запомнить меня на этом устройстве</label>
@@ -393,9 +381,7 @@
             <div class="link-toggle" onclick="showRegistrationScreen()">Новый прибор? Зарегистрироваться</div>
         </div>
 
-        <!-- ========================================== -->
-        <!-- ПАНЕЛЬ УПРАВЛЕНИЯ (ОБЩАЯ ШАПКА И СТАТУС)  -->
-        <!-- ========================================== -->
+        <!-- ПАНЕЛЬ УПРАВЛЕНИЯ -->
         <div id="mainDashboard" class="panel-view">
             <header>
                 <h1 id="dashboardTitle">Таблеточница v1.5</h1>
@@ -418,12 +404,9 @@
                 <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес</button>
             </div>
 
-            <!-- ========================================== -->
-            <!-- БЛОКИ ПАЦИЕНТА (ПОЛНЫЙ ДОСТУП)            -->
-            <!-- ========================================== -->
+            <!-- БЛОКИ ПАЦИЕНТА -->
             <div id="patientBlocks" style="display: none;">
                 
-                <!-- Блок управления доступом родственников -->
                 <div class="card">
                     <h2 style="margin-bottom: 14px;">Доступы для родственников</h2>
                     <div class="input-group">
@@ -443,7 +426,6 @@
                     </div>
                 </div>
 
-                <!-- Системные настройки -->
                 <div class="card" style="padding: 16px 20px;">
                     <div onclick="toggleCollapse('systemSettingsContent', 'systemSettingsChevron')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
                         <h2>Системные настройки</h2>
@@ -487,7 +469,6 @@
                     </div>
                 </div>
 
-                <!-- Будильники (Режим редактирования) -->
                 <div class="card">
                     <h2 style="margin-bottom: 14px;">Настройка будильников</h2>
                     <div id="alarmsList"></div>
@@ -500,7 +481,6 @@
                     </div>
                 </div>
 
-                <!-- СМС автонапоминания -->
                 <div class="card">
                     <h2 style="margin-bottom: 14px;">СМС Напоминания Пациенту</h2>
                     <div class="input-group" style="margin-bottom:16px;">
@@ -529,7 +509,6 @@
                     </div>
                 </div>
 
-                <!-- Контакты (Добавление / Удаление) -->
                 <div class="card">
                     <h2 style="margin-bottom: 14px;">Номера контактов</h2>
                     <div id="contactsList"></div>
@@ -543,24 +522,19 @@
                 </div>
             </div>
 
-            <!-- ========================================== -->
-            <!-- БЛОКИ РОДСТВЕННИКА (READ-ONLY)            -->
-            <!-- ========================================== -->
+            <!-- БЛОКИ РОДСТВЕННИКА -->
             <div id="relativeBlocks" style="display: none;">
                 
-                <!-- Будильники (Только просмотр) -->
                 <div class="card">
                     <h2 style="margin-bottom: 14px;">График приема лекарств</h2>
                     <div id="relativeAlarmsList"></div>
                 </div>
 
-                <!-- Контакты (Только просмотр) -->
                 <div class="card">
                     <h2 style="margin-bottom: 14px;">Список контактов прибора</h2>
                     <div id="relativeContactsList"></div>
                 </div>
 
-                <!-- Тревожная кнопка отправки СМС куратором -->
                 <div class="card">
                     <h2 style="margin-bottom: 14px;">Срочное напоминание пациенту</h2>
                     <div class="input-group">
@@ -617,7 +591,6 @@
             document.getElementById('authPanel').style.display = 'flex';
         }
 
-        // АВТОМАТИЧЕСКАЯ АВТОРИЗАЦИЯ ИЛИ ПАРСИНГ ССЫЛОК ПРИ ЗАПУСКЕ
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const devParam = params.get('device');
@@ -625,14 +598,12 @@
             const phoneParam = params.get('phone');
 
             if (devParam && roleParam === 'relative' && phoneParam) {
-                // Если пришли по СМС-ссылке — игнорируем авто-вход, даем зайти новому куратору
                 document.getElementById('authDeviceId').value = devParam.toLowerCase();
                 document.getElementById('authRole').value = 'relative';
                 document.getElementById('authPhone').value = phoneParam;
                 handleRoleSwitch();
                 showToast("Ссылка куратора распознана. Введите пароль.");
             } else {
-                // Иначе проверяем, запомнен ли вход на этом устройстве
                 const savedRemember = localStorage.getItem('pillbox_remember') === 'true';
                 if (savedRemember) {
                     const savedDevId = localStorage.getItem('pillbox_device_id');
@@ -649,7 +620,7 @@
                             handleRoleSwitch();
                         }
                         showToast("Автоматический вход...");
-                        processLogin(true); // Тихий вход
+                        processLogin(true); 
                     }
                 }
             }
@@ -683,7 +654,6 @@
             }
         }
 
-        // ОБРАБОТКА РЕГИСТРАЦИИ (ПЕРВЫЙ ЗАПУСК ДЛЯ ЛЮБОГО ДЕВАЙСА)
         function processRegistration() {
             const devInput = document.getElementById('regDeviceId');
             const phoneInput = document.getElementById('regPhone');
@@ -728,7 +698,6 @@
                         userRole = 'patient';
                         currentDeviceId = inputDevId;
                         
-                        // Сохраняем в localStorage при первой успешной регистрации
                         localStorage.setItem('pillbox_remember', 'true');
                         localStorage.setItem('pillbox_device_id', currentDeviceId);
                         localStorage.setItem('pillbox_role', userRole);
@@ -745,7 +714,6 @@
             });
         }
 
-        // АВТОРИЗАЦИЯ И РАЗГРАНИЧЕНИЕ ПРАВ (С СОХРАНЕНИЕМ СЕССИИ)
         function processLogin(isSilent = false) {
             const inputDevId = document.getElementById('authDeviceId').value.trim().toLowerCase();
             const role = document.getElementById('authRole').value;
@@ -772,7 +740,6 @@
                         userRole = 'patient';
                         currentDeviceId = inputDevId;
                         
-                        // Запоминание сессии Пациента
                         if (rememberMe) {
                             localStorage.setItem('pillbox_remember', 'true');
                             localStorage.setItem('pillbox_device_id', currentDeviceId);
@@ -803,7 +770,6 @@
                         userPhone = rawPhone;
                         currentDeviceId = inputDevId;
                         
-                        // Запоминание сессии Наблюдателя
                         if (rememberMe) {
                             localStorage.setItem('pillbox_remember', 'true');
                             localStorage.setItem('pillbox_device_id', currentDeviceId);
@@ -844,10 +810,7 @@
             if (currentDeviceId) {
                 database.ref(`devices/${currentDeviceId}/status`).off();
             }
-            
-            // Стираем сессию из хранилища браузера при выходе
             localStorage.clear();
-
             userRole = null;
             userPhone = "";
             currentDeviceId = "";
@@ -857,7 +820,6 @@
             showToast("Вы вышли из системы.");
         }
 
-        // Смена пароля Пациента
         function changePatientPassword() {
             const newPass = document.getElementById('newPatientPassword').value.trim();
             if (newPass.length < 4) {
@@ -867,14 +829,12 @@
             database.ref(`devices/${currentDeviceId}/auth/patient_pass`).set(newPass).then(() => {
                 showToast("Пароль пациента успешно обновлен!");
                 document.getElementById('newPatientPassword').value = "";
-                // Обновляем пароль в локальном хранилище, если сессия сохранена
                 if (localStorage.getItem('pillbox_remember') === 'true') {
                     localStorage.setItem('pillbox_pass', newPass);
                 }
             });
         }
 
-        // Генерация ссылки доступа для родственника
         function generateRelativeAccess() {
             const phone = document.getElementById('inviteSelectContact').value;
             const password = document.getElementById('invitePassword').value.trim();
@@ -940,7 +900,6 @@
             });
         }
 
-        // Плавный непрерывный таймер времени устройства
         setInterval(() => {
             if (!clockInitialized) return;
             localSecond++;
@@ -995,7 +954,7 @@
             document.getElementById('time').innerText = `${hStr}:${mStr}:${sStr}`;
         }
 
-        // ДИНАМИЧЕСКИЙ ЗАПУСК ПРОСЛУШИВАНИЯ СВОЕЙ ИЗОЛИРОВАННОЙ ВЕТКИ БАЗЫ ДАННЫХ
+        // ПОДКЛЮЧЕНИЕ СЛУШАТЕЛЯ БД
         function startListeningToDevice() {
             if (!currentDeviceId) return;
 
@@ -1003,7 +962,9 @@
                 const data = snapshot.val();
                 if (!data) return;
 
-                document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
+                // Вес теперь гарантированно считывается и парсится без зависаний
+                const currentWeight = typeof data.weight === 'number' ? data.weight : parseFloat(data.weight || 0);
+                document.getElementById('weight').innerText = currentWeight.toFixed(2) + ' г';
                 
                 if (data.time) {
                     syncLocalClock(data.time, data.lastUpdate);

@@ -53,12 +53,10 @@
             width: 14px;
             height: 32px;
             border-radius: 12px;
-            /* Половина бирюзовая, половина белая */
             background: linear-gradient(to bottom, var(--primary-color) 50%, #ffffff 50%);
             border: 1px solid rgba(0, 150, 136, 0.2);
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), inset 0 2px 4px rgba(255,255,255,0.4);
         }
-        /* Блик на капсуле */
         .capsule::before {
             content: '';
             position: absolute;
@@ -79,7 +77,6 @@
             border: 1px solid rgba(0, 150, 136, 0.15);
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08), inset -2px -2px 6px rgba(0, 150, 136, 0.05);
         }
-        /* Разделительная полоска (риска) */
         .tablet::before {
             content: '';
             position: absolute;
@@ -90,7 +87,6 @@
             background-color: rgba(0, 150, 136, 0.25);
             transform: translateY(-50%) rotate(45deg);
         }
-        /* Блик на круглой таблетке */
         .tablet::after {
             content: '';
             position: absolute;
@@ -103,7 +99,6 @@
             filter: blur(0.5px);
         }
 
-        /* Траектории полета с медленным 3D вращением */
         .fly-left {
             animation: floatLeft 18s infinite linear;
         }
@@ -140,7 +135,7 @@
         .container { 
             width: 100%; 
             max-width: 500px; 
-            z-index: 2; /* Контент строго поверх летающих таблеток */
+            z-index: 2; 
             position: relative;
         }
         header { 
@@ -165,7 +160,6 @@
             border: 1px solid rgba(0, 150, 136, 0.08);
         }
 
-        /* АНИМАЦИЯ: Пульсирующий индикатор связи */
         .online-indicator {
             display: inline-block;
             width: 8px;
@@ -208,7 +202,6 @@
             font-weight: 700;
         }
 
-        /* АНИМАЦИЯ: Шиммер-эффект на вес таблеток */
         .weight-display { 
             font-size: 48px; 
             font-weight: 800; 
@@ -230,7 +223,6 @@
             }
         }
         
-        /* АНИМАЦИЯ: Плавное всплывание элементов списков */
         .list-item {
             display: flex;
             justify-content: space-between;
@@ -297,7 +289,6 @@
             color: var(--success-color); 
         }
 
-        /* АНИМАЦИЯ: Пульсирующий статус ожидания */
         .status.pending { 
             background-color: rgba(198,40,40,0.1); 
             color: var(--pending-color); 
@@ -342,7 +333,6 @@
             flex-grow: 1;
         }
 
-        /* АНИМАЦИЯ: Интерактивные кнопки */
         .btn { 
             display: inline-flex; 
             align-items: center; 
@@ -418,7 +408,6 @@
             opacity: 1; 
         }
 
-        /* Стилизация баннеров предупреждений */
         .alert-banner {
             display: none;
             padding: 16px;
@@ -457,7 +446,6 @@
             box-shadow: 0 6px 20px rgba(127, 29, 29, 0.4);
         }
 
-        /* Кнопки переключения вкладок авторизации */
         .auth-tabs {
             display: flex;
             margin-bottom: 20px;
@@ -521,10 +509,13 @@
             <div id="formRegister" class="input-group" style="display: none;">
                 <input type="text" id="regUsername" placeholder="Придумайте логин (Английские буквы)">
                 <input type="password" id="regPassword" placeholder="Пароль">
-                <select id="regRole">
+                <select id="regRole" onchange="toggleRegDeviceIdField()">
                     <option value="patient">Пациент (полный доступ)</option>
                     <option value="relative">Родственник (только мониторинг)</option>
                 </select>
+                <!-- Дополнительные поля для пациента -->
+                <input type="text" id="regDeviceId" placeholder="ID Таблеточницы (Chip ID)">
+                <input type="text" id="regPhone" placeholder="Ваш номер телефона (+79991234567)">
                 <button class="btn" onclick="registerUser()">Зарегистрироваться</button>
             </div>
         </div>
@@ -534,6 +525,7 @@
     <div class="container" id="appContainer" style="display: none;">
         <header>
             <h1>Таблеточница v1.5 <span id="roleIndicator" style="font-size:16px; font-weight: normal; color:#5a738e;"></span></h1>
+            <div style="font-size: 13px; color:#5a738e; margin-bottom:10px;">ID привязанного устройства: <span id="currentDeviceDisplay" style="font-weight:bold;"></span></div>
             <div class="time-box" style="margin-bottom: 8px;">
                 <span class="online-indicator"></span>
                 Время устройства: &nbsp;<span id="time" style="font-weight: bold; color: #222;">--:--:--</span>
@@ -634,17 +626,10 @@
             </div>
         </div>
         
-        <!-- ДИНАМИЧЕСКИЕ КОНТАКТЫ (ОТОБРАЖАЕТСЯ ТОЛЬКО ДЛЯ РОЛИ "ПАЦИЕНТ") -->
+        <!-- СПИСОК КУРАТОРОВ И РОДСТВЕННИКОВ (ДИНАМИЧЕСКИЙ, СВЯЗАННЫЙ) -->
         <div class="card" id="contactsCard" style="display: none;">
             <h2 style="margin-bottom: 14px;">Номера контактов</h2>
             <div id="contactsList"></div>
-            
-            <div id="addContactForm" style="margin-top: 12px;">
-                <div class="input-row">
-                    <input type="text" id="newPhoneInput" placeholder="+79991234567">
-                    <button class="btn btn-sm" id="addContactBtn" onclick="addContact()">Добавить</button>
-                </div>
-            </div>
         </div>
 
         <!-- КАРТОЧКА ОТПРАВКИ ПРИГЛАШЕНИЙ РОДСТВЕННИКУ (ОТОБРАЖАЕТСЯ ТОЛЬКО ДЛЯ РОЛИ "ПАЦИЕНТ") -->
@@ -687,7 +672,10 @@
         let currentPhones = [];
         let currentAlarms = [];
         let ignoreIncomingUpdatesUntil = 0;
+        
         let currentUserRole = "patient"; 
+        let currentUserDeviceId = ""; 
+        let currentUserPhone = "";
 
         let deviceClockInterval = null;
         let localHour = 0, localMinute = 0, localSecond = 0;
@@ -698,7 +686,6 @@
             serverTimeOffset = snap.val() || 0;
         });
 
-        // Функция хелпер: преобразует обычный логин во внутренний виртуальный email
         function toEmail(username) {
             return username.toLowerCase().trim() + "@pillbox.local";
         }
@@ -706,17 +693,22 @@
         // === ОБРАБОТЧИК АВТОРИЗАЦИИ ===
         auth.onAuthStateChanged((user) => {
             if (user) {
-                // Пользователь вошел. Проверяем роль в БД.
                 database.ref('pillbox/users/' + user.uid).once('value').then((snapshot) => {
                     const profile = snapshot.val();
                     if (profile) {
                         currentUserRole = profile.role || 'patient';
+                        currentUserDeviceId = profile.deviceId || 'default';
+                        currentUserPhone = profile.phone || '';
                         initApp();
                     } else {
                         currentUserRole = 'patient';
+                        currentUserDeviceId = 'default';
+                        currentUserPhone = '';
                         database.ref('pillbox/users/' + user.uid).set({
                             username: user.email.split('@')[0],
-                            role: 'patient'
+                            role: 'patient',
+                            deviceId: 'default',
+                            phone: ''
                         }).then(() => {
                             initApp();
                         });
@@ -732,6 +724,7 @@
         function initApp() {
             document.getElementById('authContainer').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
+            document.getElementById('currentDeviceDisplay').innerText = currentUserDeviceId;
 
             const roleIndicator = document.getElementById('roleIndicator');
             const contactsCard = document.getElementById('contactsCard');
@@ -748,6 +741,19 @@
             }
 
             startDatabaseListeners();
+        }
+
+        function toggleRegDeviceIdField() {
+            const role = document.getElementById('regRole').value;
+            const deviceIdField = document.getElementById('regDeviceId');
+            const phoneField = document.getElementById('regPhone');
+            if (role === 'relative') {
+                deviceIdField.style.display = 'none';
+                phoneField.style.display = 'none';
+            } else {
+                deviceIdField.style.display = 'block';
+                phoneField.style.display = 'block';
+            }
         }
 
         // === ФУНКЦИИ AUTH ===
@@ -767,6 +773,7 @@
                 tabRegister.classList.add('active');
                 formLogin.style.display = 'none';
                 formRegister.style.display = 'flex';
+                toggleRegDeviceIdField();
             }
         }
 
@@ -791,20 +798,30 @@
             const username = document.getElementById('regUsername').value.trim();
             const pass = document.getElementById('regPassword').value;
             const role = document.getElementById('regRole').value;
+            let deviceId = document.getElementById('regDeviceId').value.trim();
+            let phone = document.getElementById('regPhone').value.trim();
 
             if (!username || !pass) { showToast("Заполните все поля!"); return; }
             if (pass.length < 6) { showToast("Пароль должен быть не менее 6 символов!"); return; }
 
             const usernameRegex = /^[a-zA-Z0-9_\-]+$/;
             if (!usernameRegex.test(username)) {
-                showToast("Логин может содержать только латинские буквы, цифры, подчёркивание и дефис!");
+                showToast("Логин может содержать только латинские буквы и цифры!");
                 return;
             }
 
             const cleanUsername = username.toLowerCase();
             const email = toEmail(cleanUsername);
 
-            // Проверка логина на уникальность в БД перед регистрацией
+            if (role === 'patient') {
+                if (!deviceId) { showToast("Укажите ID вашей таблеточницы!"); return; }
+                if (!phone) { showToast("Укажите ваш номер телефона!"); return; }
+                if (!phone.startsWith('+')) phone = '+' + phone;
+            } else {
+                deviceId = 'invited'; 
+                phone = ''; 
+            }
+
             database.ref('pillbox/usernames/' + cleanUsername).once('value')
                 .then((snap) => {
                     if (snap.exists()) {
@@ -816,7 +833,9 @@
                     const batch = {};
                     batch['pillbox/users/' + cred.user.uid] = {
                         username: cleanUsername,
-                        role: role
+                        role: role,
+                        deviceId: deviceId,
+                        phone: phone
                     };
                     batch['pillbox/usernames/' + cleanUsername] = cred.user.uid;
                     return database.ref().update(batch);
@@ -839,12 +858,20 @@
         // === СИСТЕМА ПРИГЛАШЕНИЙ ===
         function generateInvite() {
             const username = document.getElementById('inviteUsernameInput').value.trim();
+            let phone = document.getElementById('invitePhoneInput').value.trim();
+
             if (!username) { showToast("Введите логин родственника!"); return; }
+            if (!phone) { showToast("Введите номер телефона родственника!"); return; }
 
             const usernameRegex = /^[a-zA-Z0-9_\-]+$/;
             if (!usernameRegex.test(username)) {
                 showToast("Логин содержит недопустимые символы!");
                 return;
+            }
+
+            if (!phone.startsWith('+')) {
+                if (phone.startsWith('8')) phone = '+7' + phone.substring(1);
+                else phone = '+' + phone;
             }
 
             const cleanUsername = username.toLowerCase();
@@ -854,12 +881,14 @@
             database.ref('pillbox/invitations/' + token).set({
                 username: cleanUsername,
                 role: 'relative',
+                phone: phone,
+                deviceId: currentUserDeviceId,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
                 const resultDiv = document.getElementById('inviteResult');
                 resultDiv.innerHTML = `
                     <p style="font-size:13px; color:#555; margin: 8px 0 4px 0;">Ссылка для регистрации родственника:</p>
-                    <input type="text" readonly value="${inviteUrl}" id="inviteLinkInput" style="width:100%; padding:10px; margin-bottom:8px; font-size:12px; border:1.5px solid var(--border-color); border-radius:6px; outline:none;">
+                    <input type="text" readonly value="${inviteUrl}" id="inviteLinkInput" style="width:100%; padding:10px; margin-bottom:8px; font-size:12px; border:1px solid var(--border-color); border-radius:6px; outline:none;">
                     <button class="btn btn-sm" onclick="copyInviteLink()">Копировать ссылку</button>
                 `;
                 showToast("Приглашение сгенерировано!");
@@ -870,7 +899,7 @@
 
         function sendInviteSms() {
             const username = document.getElementById('inviteUsernameInput').value.trim();
-            const phone = document.getElementById('invitePhoneInput').value.trim();
+            let phone = document.getElementById('invitePhoneInput').value.trim();
             
             if (!username) { showToast("Введите логин родственника!"); return; }
             if (!phone) { showToast("Введите номер телефона родственника!"); return; }
@@ -881,6 +910,11 @@
                 return;
             }
 
+            if (!phone.startsWith('+')) {
+                if (phone.startsWith('8')) phone = '+7' + phone.substring(1);
+                else phone = '+' + phone;
+            }
+
             const cleanUsername = username.toLowerCase();
             const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
             const inviteUrl = window.location.origin + window.location.pathname + "?invite=" + token;
@@ -889,10 +923,12 @@
             database.ref('pillbox/invitations/' + token).set({
                 username: cleanUsername,
                 role: 'relative',
+                phone: phone,
+                deviceId: currentUserDeviceId,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                // Отправка команды таблеточнице для отправки СМС через SIM800L
-                return database.ref('pillbox/commands').set({
+                // Отправка команды на устройство пациента для отправки СМС через SIM800L
+                return database.ref('pillbox/devices/' + currentUserDeviceId + '/commands').set({
                     action: "send_invite_sms",
                     phone: phone,
                     msg: "Inv: " + cleanUsername + " Link: " + inviteUrl,
@@ -927,17 +963,78 @@
                     const inviteData = snap.val();
                     if (inviteData) {
                         switchAuthTab('register');
-                        document.getElementById('regUsername').value = inviteData.username;
-                        document.getElementById('regUsername').disabled = true; // Блокируем изменение логина
-                        document.getElementById('regRole').value = 'relative';
-                        document.getElementById('regRole').disabled = true; // Блокируем изменение роли
+                        // Предзаполняем поля из инвайта и блокируем их изменение
+                        const regUserField = document.getElementById('regUsername');
+                        regUserField.value = inviteData.username;
+                        regUserField.disabled = true;
+
+                        const regRoleField = document.getElementById('regRole');
+                        regRoleField.value = 'relative';
+                        regRoleField.disabled = true;
+
+                        // Скрываем ненужные поля
+                        document.getElementById('regDeviceId').style.display = 'none';
+                        document.getElementById('regPhone').style.display = 'none';
+
+                        // Дополнительно сохраняем контекст инвайта в глобальные переменные формы регистрации
+                        window.activeInvite = {
+                            token: inviteToken,
+                            deviceId: inviteData.deviceId,
+                            phone: inviteData.phone,
+                            username: inviteData.username
+                        };
+
                         showToast("Приглашение принято! Пожалуйста, придумайте пароль.");
                     } else {
-                        showToast("Ссылка приглашения недействительна или устарела.");
+                        showToast("Ссылка приглашения недействительна.");
                     }
                 });
             }
         }
+
+        // Переопределенный обработчик регистрации для родственников с учетом инвайта
+        const originalRegisterUser = registerUser;
+        registerUser = function() {
+            if (window.activeInvite) {
+                const pass = document.getElementById('regPassword').value;
+                if (!pass) { showToast("Введите пароль!"); return; }
+                if (pass.length < 6) { showToast("Пароль должен быть не менее 6 символов!"); return; }
+
+                const invite = window.activeInvite;
+
+                auth.createUserWithEmailAndPassword(toEmail(invite.username), pass)
+                    .then((cred) => {
+                        const batch = {};
+                        // Профиль родственника
+                        batch['pillbox/users/' + cred.user.uid] = {
+                            username: invite.username,
+                            role: 'relative',
+                            deviceId: invite.deviceId,
+                            phone: invite.phone
+                        };
+                        batch['pillbox/usernames/' + invite.username] = cred.user.uid;
+                        // Заносим телефон родственника в связанный список кураторов данного устройства
+                        batch['pillbox/devices/' + invite.deviceId + '/relatives/' + cred.user.uid] = {
+                            username: invite.username,
+                            phone: invite.phone
+                        };
+                        return database.ref().update(batch);
+                    })
+                    .then(() => {
+                        // Удаляем отработанное приглашение
+                        return database.ref('pillbox/invitations/' + invite.token).remove();
+                    })
+                    .then(() => {
+                        showToast("Родственник успешно зарегистрирован!");
+                        window.activeInvite = null;
+                    })
+                    .catch((err) => {
+                        showToast(err.message);
+                    });
+            } else {
+                originalRegisterUser();
+            }
+        };
 
         // === ИСХОДНЫЙ ФУНКЦИОНАЛ МОНИТОРИНГА И УПРАВЛЕНИЯ ===
 
@@ -1013,12 +1110,46 @@
             document.getElementById('time').innerText = `${hStr}:${mStr}:${sStr}`;
         }
 
+        // Автоматическая фоновая пересборка контактов для отправки СМС физическим прибором
+        function autoSyncDevicePhones(patientPhone, relativesObj) {
+            if (!currentUserDeviceId || currentUserDeviceId === 'default' || currentUserDeviceId === 'invited') return;
+            
+            let combinedList = [];
+            // Под индексом 0 всегда идет сам Пациент
+            if (patientPhone) {
+                combinedList.push(patientPhone);
+            }
+            
+            // Далее по порядку заносятся верифицированные родственники
+            if (relativesObj) {
+                Object.keys(relativesObj).forEach(key => {
+                    const rel = relativesObj[key];
+                    if (rel.phone && combinedList.length < 10) {
+                        combinedList.push(rel.phone);
+                    }
+                });
+            }
+            
+            // Если списки изменились, автоматически отправляем СМС-пакет на устройство
+            if (JSON.stringify(combinedList) !== JSON.stringify(currentPhones)) {
+                currentPhones = combinedList;
+                
+                database.ref('pillbox/devices/' + currentUserDeviceId + '/commands').set({
+                    action: "save_phones",
+                    list: combinedList,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    console.log("[SYSTEM] Список СМС-оповещений синхронизирован с таблеточницей.");
+                });
+            }
+        }
+
         function startDatabaseListeners() {
-            database.ref('pillbox/status').on('value', (snapshot) => {
+            // Подключаем слушатели к изолированному узлу нашего устройства
+            database.ref('pillbox/devices/' + currentUserDeviceId + '/status').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
 
-                // Валидация входящего значения веса
                 const rawWeight = data.weight;
                 const validWeight = (typeof rawWeight === 'number' && !isNaN(rawWeight)) ? rawWeight : 0.00;
                 document.getElementById('weight').innerText = validWeight.toFixed(2) + ' г';
@@ -1080,28 +1211,14 @@
                     bTarCheckbox.checked = data.buzzTare !== undefined ? data.buzzTare : true;
                 }
 
-                // 1. Получение телефонов (Отображается только для пациента)
-                if (currentUserRole !== 'relative') {
-                    let newPhones = data.phones || [];
-                    if (newPhones.length === 0) {
-                        if (data.phone1 && data.phone1 !== '+70000000000') newPhones.push(data.phone1);
-                        if (data.phone2 && data.phone2 !== '+70000000000') newPhones.push(data.phone2);
-                        if (data.phone3 && data.phone3 !== '+70000000000') newPhones.push(data.phone3);
-                    }
-                    if (JSON.stringify(newPhones) !== JSON.stringify(currentPhones)) {
-                        currentPhones = newPhones;
-                        renderContacts();
-                    }
-                }
-
-                // 2. Получение будильников
+                // Получение будильников
                 let newAlarms = data.alarms || [];
                 if (JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms)) {
                     currentAlarms = newAlarms;
                     renderAlarms();
                 }
 
-                // 3. Автонапоминание
+                // Автонапоминание
                 const enabledCheckbox = document.getElementById('remindEnabledInput');
                 if (document.activeElement !== enabledCheckbox) {
                     enabledCheckbox.checked = data.remindEnabled || false;
@@ -1111,6 +1228,19 @@
                 if (document.activeElement !== timeInput) {
                     timeInput.value = data.remindTime || '12:00';
                 }
+            });
+
+            // Отдельный слушатель для кураторов (родственников), привязанных к устройству
+            database.ref('pillbox/devices/' + currentUserDeviceId + '/relatives').on('value', (snapshot) => {
+                const relativesVal = snapshot.val();
+                
+                // Рендерим список контактов на странице пациента
+                if (currentUserRole !== 'relative') {
+                    renderContacts(relativesVal);
+                }
+                
+                // Автоматически синхронизируем связанный список телефонов с устройством
+                autoSyncDevicePhones(currentUserPhone, relativesVal);
             });
         }
 
@@ -1123,7 +1253,7 @@
             
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
             
-            database.ref('pillbox/commands').set({
+            database.ref('pillbox/devices/' + currentUserDeviceId + '/commands').set({
                 action: "save_config",
                 smsEnabled: smsEnabled,
                 buzzAlarm: buzzAlarm,
@@ -1138,25 +1268,59 @@
             });
         }
 
-        function renderContacts() {
+        // Рендеринг списка родственников на основе привязанных к БД устройства аккаунтов
+        function renderContacts(relativesObj) {
             const listDiv = document.getElementById('contactsList');
             listDiv.innerHTML = '';
 
-            if (currentPhones.length === 0) {
-                listDiv.innerHTML = '<p style="color:#888; font-size:14px; text-align:center; margin: 8px 0;">Контакты не сохранены</p>';
-            } else {
-                currentPhones.forEach((phone, idx) => {
-                    const label = idx === 0 ? "Пациент" : `Куратор ${idx}`;
+            let hasContacts = false;
+            
+            // Сначала выводим самого пациента как получателя по умолчанию (под индексом 0)
+            if (currentUserPhone) {
+                hasContacts = true;
+                listDiv.innerHTML += `
+                    <div class="list-item">
+                        <div>
+                            <span class="contact-label" style="background-color:rgba(0,150,136,0.15);">Пациент</span>
+                            <span style="font-weight:600; margin-left:12px; font-size:15px;">${currentUserPhone}</span>
+                        </div>
+                        <span style="color:#aaa; font-size:12px; font-weight:normal; user-select:none;">Главный</span>
+                    </div>
+                `;
+            }
+
+            if (relativesObj) {
+                hasContacts = true;
+                Object.keys(relativesObj).forEach((key) => {
+                    const rel = relativesObj[key];
                     listDiv.innerHTML += `
                         <div class="list-item">
                             <div>
-                                <span class="contact-label">${label}</span>
-                                <span style="font-weight:600; margin-left:12px; font-size:15px;">${phone}</span>
+                                <span class="contact-label">Родственник</span>
+                                <span style="font-weight:600; margin-left:12px; font-size:15px;">${rel.phone} (${rel.username})</span>
                             </div>
-                            <span class="delete-btn" onclick="deleteContact(${idx})">&times;</span>
+                            <span class="delete-btn" onclick="deleteRelativeContact('${key}')">&times;</span>
                         </div>
                     `;
                 });
+            }
+
+            if (!hasContacts) {
+                listDiv.innerHTML = '<p style="color:#888; font-size:14px; text-align:center; margin: 8px 0;">Контакты родственников отсутствуют. Отправьте приглашение.</p>';
+            }
+        }
+
+        function deleteRelativeContact(uid) {
+            if (confirm("Вы действительно хотите удалить этого родственника из системы оповещений?")) {
+                // Удаляем его из списка родственников данного устройства
+                database.ref('pillbox/devices/' + currentUserDeviceId + '/relatives/' + uid).remove()
+                    .then(() => {
+                        // Также отвязываем узел устройства в профиле самого родственника
+                        return database.ref('pillbox/users/' + uid + '/deviceId').set('unlinked');
+                    })
+                    .then(() => {
+                        showToast("Родственник успешно отвязан от устройства!");
+                    });
             }
         }
 
@@ -1191,44 +1355,6 @@
             syncAlarms();
         }
 
-        function addContact() {
-            const input = document.getElementById('newPhoneInput');
-            let phone = input.value.trim().replace(/\s+/g, '');
-            if (!phone) { showToast("Введите номер!"); return; }
-            
-            if (!phone.startsWith('+')) {
-                if (phone.startsWith('8')) phone = '+7' + phone.substring(1);
-                else if (phone.startsWith('7')) phone = '+' + phone;
-                else phone = '+7' + phone;
-            }
-            if (phone.length < 11 || phone.length > 15) { showToast("Неверный формат номера!"); return; }
-
-            currentPhones.push(phone);
-            input.value = '';
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            renderContacts();
-            syncPhones();
-        }
-
-        function deleteContact(idx) {
-            currentPhones.splice(idx, 1);
-            ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            renderContacts();
-            syncPhones();
-        }
-
-        function syncPhones() {
-            database.ref('pillbox/commands').set({
-                action: "save_phones",
-                list: currentPhones,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                showToast("Список контактов отправлен на устройство!");
-            }).catch(() => {
-                showToast("Ошибка сохранения");
-            });
-        }
-
         function addAlarm() {
             const input = document.getElementById('newAlarmInput');
             const time = input.value;
@@ -1250,7 +1376,7 @@
 
         function syncAlarms() {
             const timeList = currentAlarms.map(a => a.time);
-            database.ref('pillbox/commands').set({
+            database.ref('pillbox/devices/' + currentUserDeviceId + '/commands').set({
                 action: "save_alarms",
                 list: timeList,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -1278,7 +1404,7 @@
         function disableReminderOnServer() {
             const time = document.getElementById('remindTimeInput').value || '12:00';
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
-            database.ref('pillbox/commands').set({
+            database.ref('pillbox/devices/' + currentUserDeviceId + '/commands').set({
                 action: "save_reminder",
                 time: time,
                 enabled: false,
@@ -1297,7 +1423,7 @@
             btn.innerText = "Сохранение..."; btn.disabled = true;
             ignoreIncomingUpdatesUntil = Date.now() + 6000;
 
-            database.ref('pillbox/commands').set({
+            database.ref('pillbox/devices/' + currentUserDeviceId + '/commands').set({
                 action: "save_reminder",
                 time: time,
                 enabled: enabled,
@@ -1318,7 +1444,7 @@
 
             btn.innerText = "Команда..."; btn.disabled = true;
 
-            database.ref('pillbox/commands').set({
+            database.ref('pillbox/devices/' + currentUserDeviceId + '/commands').set({
                 action: "send_now_sms",
                 msg: text,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -1334,7 +1460,7 @@
         function triggerTare() {
             const btn = document.getElementById('tareBtn');
             btn.innerText = "Обнуление весов..."; btn.disabled = true;
-            database.ref('pillbox/commands').set({
+            database.ref('pillbox/devices/' + currentUserDeviceId + '/commands').set({
                 action: "tare",
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {

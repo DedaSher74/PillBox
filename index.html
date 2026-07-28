@@ -10,10 +10,10 @@
     
     <style>
         :root {
-            --bg-color: #eef5f6; 
+            --bg-color: #eef5f6; /* Ровный матовый фон */
             --card-bg: rgba(255, 255, 255, 0.96); 
             --text-color: #2c3e50;
-            --primary-color: #009688; 
+            --primary-color: #009688; /* Бирюзовый */
             --primary-hover: #00796b;
             --success-color: #2e7d32; 
             --pending-color: #c62828;
@@ -33,377 +33,996 @@
             box-sizing: border-box;
         }
 
-        /* === ОКНО АВТОРИЗАЦИИ === */
-        #authOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); z-index: 1000;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .auth-card {
-            background: white; padding: 40px; border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 100%; max-width: 350px;
-            text-align: center; z-index: 1001;
-        }
-        .auth-card h1 { color: var(--primary-color); margin-bottom: 20px; }
-        .auth-card input, .auth-card select {
-            width: 100%; padding: 12px; margin-bottom: 15px;
-            border-radius: 10px; border: 1px solid var(--border-color);
-            box-sizing: border-box; font-size: 16px;
-        }
-
-        /* Скрытие элементов для роли Пациент */
-        .admin-only { display: none; }
-
         /* === КОНТЕЙНЕР ДЛЯ ЛЕТАЮЩИХ ТАБЛЕТОК === */
         .bg-animation {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; overflow: hidden; pointer-events: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
         }
+        
+        /* === ТИП 1: Двухцветная капсула === */
         .capsule {
-            position: absolute; bottom: -70px; width: 14px; height: 32px; border-radius: 12px;
+            position: absolute;
+            bottom: -70px;
+            width: 14px;
+            height: 32px;
+            border-radius: 12px;
+            /* Половина бирюзовая, половина белая */
             background: linear-gradient(to bottom, var(--primary-color) 50%, #ffffff 50%);
             border: 1px solid rgba(0, 150, 136, 0.2);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), inset 0 2px 4px rgba(255,255,255,0.4);
         }
+        /* Блик на капсуле */
+        .capsule::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 20%;
+            width: 25%;
+            height: 35%;
+            background: rgba(255,255,255,0.4);
+            border-radius: 4px;
+        }
+
+        /* === ТИП 2: Круглая таблетка с риской === */
         .tablet {
-            position: absolute; bottom: -70px; border-radius: 50%; background: #ffffff;
+            position: absolute;
+            bottom: -70px;
+            border-radius: 50%;
+            background: #ffffff;
             border: 1px solid rgba(0, 150, 136, 0.15);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08), inset -2px -2px 6px rgba(0, 150, 136, 0.05);
         }
-        .fly-left { animation: floatLeft 18s infinite linear; }
-        .fly-right { animation: floatRight 24s infinite linear; }
+        /* Разделительная полоска (риска) */
+        .tablet::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 8%;
+            right: 8%;
+            height: 1px;
+            background-color: rgba(0, 150, 136, 0.25);
+            transform: translateY(-50%) rotate(45deg);
+        }
+        /* Блик на круглой таблетке */
+        .tablet::after {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.6);
+            filter: blur(0.5px);
+        }
+
+        /* Траектории полета с медленным 3D вращением */
+        .fly-left {
+            animation: floatLeft 18s infinite linear;
+        }
+        .fly-right {
+            animation: floatRight 24s infinite linear;
+        }
 
         @keyframes floatLeft {
-            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.9; }
-            90% { opacity: 0.9; }
-            100% { transform: translateY(-115vh) translateX(-50px) rotate(-360deg); opacity: 0; }
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg) scale(0.85);
+                opacity: 0;
+            }
+            8% { opacity: 0.95; }
+            92% { opacity: 0.95; }
+            100% {
+                transform: translateY(-115vh) translateX(-50px) rotate(-360deg) scale(1.05);
+                opacity: 0;
+            }
         }
+
         @keyframes floatRight {
-            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.9; }
-            90% { opacity: 0.9; }
-            100% { transform: translateY(-115vh) translateX(60px) rotate(360deg); opacity: 0; }
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg) scale(0.9);
+                opacity: 0;
+            }
+            8% { opacity: 0.95; }
+            92% { opacity: 0.95; }
+            100% {
+                transform: translateY(-115vh) translateX(60px) rotate(360deg) scale(1.05);
+                opacity: 0;
+            }
         }
 
-        .container { width: 100%; max-width: 500px; z-index: 2; position: relative; display: none; }
-        header { text-align: center; margin-bottom: 24px; }
-        h1 { font-size: 26px; margin: 0 0 8px 0; color: var(--primary-color); font-weight: 700; }
-        
+        .container { 
+            width: 100%; 
+            max-width: 500px; 
+            z-index: 2; /* Контент строго поверх летающих таблеток */
+            position: relative;
+        }
+        header { 
+            text-align: center; 
+            margin-bottom: 24px; 
+        }
+        h1 { 
+            font-size: 26px; 
+            margin: 0 0 8px 0; 
+            color: var(--primary-color); 
+            font-weight: 700;
+        }
         .time-box { 
-            font-size: 14px; color: #5a738e; background: #ffffff; padding: 6px 14px;
-            border-radius: 20px; display: inline-flex; align-items: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 150, 136, 0.08);
+            font-size: 14px; 
+            color: #5a738e; 
+            background: #ffffff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 150, 136, 0.08);
         }
 
+        /* АНИМАЦИЯ: Пульсирующий индикатор связи */
         .online-indicator {
-            display: inline-block; width: 8px; height: 8px; background-color: var(--success-color);
-            border-radius: 50%; margin-right: 8px; animation: pulse-green 2s infinite;
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+            animation: pulse-green 2s infinite;
         }
         @keyframes pulse-green {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 125, 50, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(46, 125, 50, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(46, 125, 50, 0);
+            }
         }
 
         .card { 
-            background: var(--card-bg); border-radius: 16px; padding: 22px; margin-bottom: 16px; 
-            box-shadow: 0 10px 30px rgba(0, 79, 70, 0.04); border: 1px solid rgba(255, 255, 255, 0.8);
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            padding: 22px; 
+            margin-bottom: 16px; 
+            box-shadow: 0 10px 30px rgba(0, 79, 70, 0.04); 
+            border: 1px solid rgba(255, 255, 255, 0.8);
         }
-        .card h2 { font-size: 14px; margin: 0; text-transform: uppercase; color: #617d7a; letter-spacing: 0.8px; font-weight: 700; }
+        .card h2 { 
+            font-size: 14px; 
+            margin: 0; 
+            text-transform: uppercase; 
+            color: #617d7a; 
+            letter-spacing: 0.8px;
+            font-weight: 700;
+        }
 
+        /* АНИМАЦИЯ: Шиммер-эффект на вес таблеток */
         .weight-display { 
-            font-size: 48px; font-weight: 800; text-align: center; margin: 15px 0 20px 0; 
-            color: #1a252f; font-feature-settings: "tnum"; 
+            font-size: 48px; 
+            font-weight: 800; 
+            text-align: center; 
+            margin: 15px 0 20px 0; 
+            background: linear-gradient(to right, #1a252f 20%, var(--primary-color) 40%, var(--primary-hover) 60%, #1a252f 80%);
+            background-size: 200% auto;
+            color: #1a252f;
+            background-clip: text;
+            text-fill-color: transparent;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 6s linear infinite;
+            font-feature-settings: "tnum"; 
+        }
+        @keyframes shine {
+            to {
+                background-position: 200% center;
+            }
         }
         
+        /* АНИМАЦИЯ: Плавное всплывание элементов списков */
         .list-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background-color: #fafdfd; padding: 14px 18px; border-radius: 12px;
-            margin-bottom: 8px; border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fafdfd;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border-color);
+            animation: slideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
+        .list-item div {
+            display: flex;
+            align-items: center;
+        }
+        .contact-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--primary-color);
+            background-color: rgba(0, 150, 136, 0.08);
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .alarm-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .delete-btn {
+            color: #b91c1c;
+            font-size: 26px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+            transition: transform 0.1s ease;
+            user-select: none;
+        }
+        .delete-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .status { 
+            font-size: 12px; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-weight: 600; 
+            text-transform: uppercase; 
+        }
+        .status.taken { 
+            background-color: rgba(46,125,50,0.1); 
+            color: var(--success-color); 
+        }
+
+        /* АНИМАЦИЯ: Пульсирующий статус ожидания */
+        .status.pending { 
+            background-color: rgba(198,40,40,0.1); 
+            color: var(--pending-color); 
+            animation: statusPulse 2s infinite alternate;
+        }
+        @keyframes statusPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.2);
+            }
+            100% {
+                box-shadow: 0 0 0 6px rgba(198, 40, 40, 0);
+            }
+        }
+
+        .input-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"], input[type="time"] { 
+            width: 100%; 
+            box-sizing: border-box; 
+            padding: 14px; 
+            border-radius: 10px; 
+            border: 1.5px solid rgba(0, 150, 136, 0.25); 
+            background: #ffffff;
+            font-size: 15px; 
+            font-family: inherit;
+            color: var(--text-color);
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        input[type="text"]:focus, input[type="time"]:focus {
+            border-color: var(--primary-color);
+        }
+        input[type="time"] {
+            width: auto;
+            flex-grow: 1;
+        }
+
+        /* АНИМАЦИЯ: Интерактивные парящие кнопки */
         .btn { 
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 100%; padding: 15px; background-color: var(--primary-color); 
-            color: white; border: none; border-radius: 12px; font-size: 16px; 
-            font-weight: 600; cursor: pointer; transition: 0.2s;
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            width: 100%; 
+            padding: 15px; 
+            background-color: var(--primary-color); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background-color 0.2s ease; 
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0, 150, 136, 0.15);
         }
-        .btn:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
-        .btn-sm { padding: 14px 22px; width: auto; }
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0, 150, 136, 0.2);
+        }
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 150, 136, 0.15);
+        }
+        .btn-sm {
+            padding: 14px 22px;
+            width: auto;
+        }
         
-        .status { font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
-        .status.taken { background-color: rgba(46,125,50,0.1); color: var(--success-color); }
-        .status.pending { background-color: rgba(198,40,40,0.1); color: var(--pending-color); }
+        .checkbox-row { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin: 6px 0; 
+            font-size: 15px; 
+        }
+        input[type="checkbox"] { 
+            width: 22px; 
+            height: 22px; 
+            cursor: pointer; 
+            accent-color: var(--primary-color);
+        }
 
-        .alert-banner { display: none; padding: 16px; border-radius: 14px; text-align: center; font-weight: 700; margin-bottom: 16px; font-size: 14px; }
-        .banner-stage-1 { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-        .banner-stage-2 { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; animation: bannerPulse 1.8s infinite; }
-        .banner-stage-3 { background-color: #7f1d1d; color: #fee2e2; border: 1px solid #991b1b; }
-        @keyframes bannerPulse { 0% { transform: scale(1); } 50% { transform: scale(1.015); } 100% { transform: scale(1); } }
+        #reminderConfig {
+            display: none;
+            border-top: 1px dashed var(--border-color);
+            margin-top: 16px;
+            padding-top: 16px;
+        }
 
-        #toast { visibility: hidden; min-width: 260px; background-color: #2c3e50; color: #fff; text-align: center; border-radius: 10px; padding: 16px; position: fixed; z-index: 999; left: 50%; bottom: 30px; transform: translateX(-50%); transition: opacity 0.2s linear; opacity: 0; }
-        #toast.show { visibility: visible; opacity: 1; }
-        
-        .invite-box { background: #f0fdfa; border: 2px dashed var(--primary-color); padding: 15px; border-radius: 12px; margin-top: 10px; display: none; font-size: 14px; }
+        #toast { 
+            visibility: hidden; 
+            min-width: 260px; 
+            background-color: #2c3e50; 
+            color: #fff; 
+            text-align: center; 
+            border-radius: 10px; 
+            padding: 16px; 
+            position: fixed; 
+            z-index: 999; 
+            left: 50%; 
+            bottom: 30px; 
+            transform: translateX(-50%); 
+            font-size: 14px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
+            transition: opacity 0.2s linear; 
+            opacity: 0; 
+        }
+        #toast.show { 
+            visibility: visible; 
+            opacity: 1; 
+        }
+
+        /* Стилизация баннеров предупреждений */
+        .alert-banner {
+            display: none;
+            padding: 16px;
+            border-radius: 14px;
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 16px;
+            font-size: 14px;
+            line-height: 1.4;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .banner-stage-1 {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        @keyframes bannerPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.015); box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3); }
+            100% { transform: scale(1); }
+        }
+
+        .banner-stage-2 {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            animation: bannerPulse 1.8s infinite;
+        }
+
+        .banner-stage-3 {
+            background-color: #7f1d1d;
+            color: #fee2e2;
+            border: 1px solid #991b1b;
+            box-shadow: 0 6px 20px rgba(127, 29, 29, 0.4);
+        }
     </style>
 </head>
 <body>
 
-    <!-- ФОНОВАЯ АНИМАЦИЯ -->
+    <!-- СБАЛАНСИРОВАННЫЙ ЗАДНИЙ ФОН: 12 летающих элементов (6 капсул + 6 таблеток) -->
     <div class="bg-animation">
-        <div class="capsule fly-left" style="left: 10%; animation-delay: 0s;"></div>
-        <div class="tablet fly-right" style="left: 30%; animation-delay: 5s; width: 20px; height: 20px;"></div>
-        <div class="capsule fly-left" style="left: 60%; animation-delay: 2s;"></div>
-        <div class="tablet fly-right" style="left: 80%; animation-delay: 8s; width: 25px; height: 25px;"></div>
+        <!-- Летающие капсулы (двухцветные) -->
+        <div class="capsule fly-left" style="left: 6%; animation-delay: 0s; animation-duration: 22s;"></div>
+        <div class="capsule fly-right" style="left: 21%; animation-delay: 5s; animation-duration: 17s; width: 12px; height: 28px;"></div>
+        <div class="capsule fly-left" style="left: 36%; animation-delay: 11s; animation-duration: 25s;"></div>
+        <div class="capsule fly-right" style="left: 53%; animation-delay: 3s; animation-duration: 19s;"></div>
+        <div class="capsule fly-left" style="left: 71%; animation-delay: 9s; animation-duration: 21s; width: 16px; height: 36px;"></div>
+        <div class="capsule fly-right" style="left: 86%; animation-delay: 14s; animation-duration: 18s;"></div>
+
+        <!-- Летающие круглые таблетки (с рисками) -->
+        <div class="tablet fly-right" style="left: 13%; animation-delay: 4s; animation-duration: 20s; width: 22px; height: 22px;"></div>
+        <div class="tablet fly-left" style="left: 29%; animation-delay: 10s; animation-duration: 24s; width: 18px; height: 18px;"></div>
+        <div class="tablet fly-right" style="left: 45%; animation-delay: 1s; animation-duration: 16s; width: 30px; height: 30px;"></div>
+        <div class="tablet fly-left" style="left: 62%; animation-delay: 7s; animation-duration: 23s; width: 26px; height: 26px;"></div>
+        <div class="tablet fly-right" style="left: 78%; animation-delay: 13s; animation-duration: 18s; width: 20px; height: 20px;"></div>
+        <div class="tablet fly-left" style="left: 94%; animation-delay: 6s; animation-duration: 15s; width: 24px; height: 24px;"></div>
     </div>
 
-    <!-- ОКНО ВХОДА -->
-    <div id="authOverlay">
-        <div class="auth-card">
-            <h1>Вход в PillBox</h1>
-            <input type="text" id="loginUser" placeholder="Логин (admin)">
-            <input type="password" id="passUser" placeholder="Пароль (1234)">
-            <select id="roleUser">
-                <option value="relative">Я — Родственник</option>
-                <option value="patient">Я — Пациент</option>
-            </select>
-            <button class="btn" onclick="handleLogin()">Войти</button>
-        </div>
-    </div>
-
-    <div class="container" id="mainContainer">
+    <div class="container">
         <header>
             <h1>Таблеточница v1.5</h1>
+            <!-- Разметка с онлайн-индикатором -->
             <div class="time-box">
                 <span class="online-indicator"></span>
-                Время: &nbsp;<span id="time" style="font-weight: bold;">--:--:--</span>
-                <a href="#" onclick="location.reload()" style="margin-left:15px; color:#c62828; text-decoration:none; font-size:12px;">Выход</a>
+                Время устройства: &nbsp;<span id="time" style="font-weight: bold; color: #222;">--:--:--</span>
             </div>
         </header>
 
-        <div id="cupWarningBanner" class="alert-banner"></div>
+        <!-- ДИНАМИЧЕСКИЙ ЭСКАЛАЦИОННЫЙ БАННЕР -->
+        <div id="cupWarningBanner" class="alert-banner">
+            ⚠️ Ожидание получения статуса...
+        </div>
         
-        <!-- ВЕС -->
+        <!-- КАРТОЧКА ВЕСА -->
         <div class="card">
-            <h2>Текущий вес</h2>
+            <h2 style="margin-bottom: 14px;">Текущий вес таблеток</h2>
             <div class="weight-display" id="weight">0.00 г</div>
-            <button class="btn admin-only" id="tareBtn" onclick="triggerTare()">Сбросить вес</button>
+            <button class="btn" id="tareBtn" onclick="triggerTare()">Сбросить вес</button>
         </div>
         
-        <!-- СИСТЕМНЫЕ НАСТРОЙКИ -->
-        <div class="card admin-only">
-            <div onclick="toggleCollapse('systemSettingsContent')" style="display: flex; justify-content: space-between; cursor: pointer;">
+        <!-- СИСТЕМНЫЕ НАСТРОЙКИ (КЛИКАБЕЛЬНЫЙ СПОЙЛЕР) -->
+        <div class="card" style="padding: 16px 20px;">
+            <div onclick="toggleCollapse('systemSettingsContent', 'systemSettingsChevron')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
                 <h2>Системные настройки</h2>
-                <span>▼</span>
+                <span id="systemSettingsChevron" style="font-size: 15px; color: #777; transition: transform 0.2s ease;">▼</span>
             </div>
-            <div id="systemSettingsContent" style="display: none; margin-top: 15px;">
-                <label><input type="checkbox" id="smsEnabledInput" onchange="saveDeviceConfig()"> Разрешить СМС</label><br><br>
-                <label><input type="checkbox" id="buzzAlarmInput" onchange="saveDeviceConfig()"> Звук будильника</label><br>
-                <label><input type="checkbox" id="buzzButtonsInput" onchange="saveDeviceConfig()"> Звук кнопок</label><br>
-                <label><input type="checkbox" id="buzzIntakeInput" onchange="saveDeviceConfig()"> Звук приема</label><br>
-                <label><input type="checkbox" id="buzzTareInput" onchange="saveDeviceConfig()"> Звук тары</label>
+            
+            <div id="systemSettingsContent" style="display: none; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+                <div class="input-group">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="smsEnabledInput" onchange="saveDeviceConfig()">
+                        <label for="smsEnabledInput" style="font-weight: 600; cursor:pointer;">Разрешить отправку СМС</label>
+                    </div>
+                    
+                    <hr style="border:0; border-top: 1px solid var(--border-color); margin:12px 0;">
+                    <h3 style="font-size:14px; margin:0 0 6px 0; color:#555;">Индивидуальная настройка звуков зуммера:</h3>
+                    
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="buzzAlarmInput" onchange="saveDeviceConfig()">
+                        <label for="buzzAlarmInput" style="font-weight: 600; cursor:pointer;">Звук при будильнике (тревоге)</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="buzzButtonsInput" onchange="saveDeviceConfig()">
+                        <label for="buzzButtonsInput" style="font-weight: 600; cursor:pointer;">Звук при нажатии на кнопки</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="buzzIntakeInput" onchange="saveDeviceConfig()">
+                        <label for="buzzIntakeInput" style="font-weight: 600; cursor:pointer;">Звук при приеме таблетки</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="buzzTareInput" onchange="saveDeviceConfig()">
+                        <label for="buzzTareInput" style="font-weight: 600; cursor:pointer;">Звук при сбросе тары (весов)</label>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- БУДИЛЬНИКИ -->
+        <!-- ДИНАМИЧЕСКИЕ БУДИЛЬНИКИ -->
         <div class="card">
-            <h2>Будильники</h2>
+            <h2 style="margin-bottom: 14px;">Настройка будильников</h2>
             <div id="alarmsList"></div>
-            <div class="admin-only" style="margin-top: 10px; display: flex; gap: 5px;">
-                <input type="time" id="newAlarmInput" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1;">
-                <button class="btn btn-sm" onclick="addAlarm()">+</button>
+            
+            <div id="addAlarmForm" style="margin-top: 12px;">
+                <div class="input-row">
+                    <input type="time" id="newAlarmInput">
+                    <button class="btn btn-sm" id="addAlarmBtn" onclick="addAlarm()">Добавить</button>
+                </div>
             </div>
         </div>
 
-        <!-- СМС -->
-        <div class="card admin-only">
-            <h2>СМС Пациенту</h2>
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="manualSmsText" value="Прими таблетку!" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1;">
-                <button class="btn btn-sm" onclick="sendManualSms()">Отправить</button>
+        <!-- СМС НАПОМИНАНИЯ -->
+        <div class="card">
+            <h2 style="margin-bottom: 14px;">СМС Напоминания Пациенту</h2>
+            <div class="input-group" style="margin-bottom:16px;">
+                <h3 style="font-size:14px; margin:0; color:#555;">Ручное СМС (на Телефон Пациента):</h3>
+                <div class="input-row">
+                    <input type="text" id="manualSmsText" value="Не забудь принять таблетку!">
+                    <button class="btn btn-sm" id="sendManualBtn" onclick="sendManualSms()">Отправить</button>
+                </div>
             </div>
-            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
-            <label><input type="checkbox" id="remindEnabledInput" onchange="saveAutoReminder()"> Автонапоминание</label>
-            <input type="time" id="remindTimeInput" style="margin-left: 10px; padding: 5px;">
+            
+            <hr style="border:0; border-top: 1px solid var(--border-color); margin:16px 0;">
+            
+            <div class="input-group">
+                <div class="checkbox-row">
+                    <input type="checkbox" id="remindEnabledInput" onchange="toggleReminderView(true)">
+                    <label for="remindEnabledInput" style="font-weight: 600; cursor:pointer;">Включить автонапоминание</label>
+                </div>
+                
+                <div id="reminderConfig">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <span style="font-size: 15px;">Время отправки:</span>
+                        <input type="time" id="remindTimeInput">
+                    </div>
+                    <button class="btn" id="saveRemindBtn" onclick="saveAutoReminder()">Сохранить настройки автонапоминания</button>
+                </div>
+            </div>
         </div>
         
-        <!-- КОНТАКТЫ И ПРИГЛАШЕНИЯ -->
-        <div class="card admin-only">
-            <h2>Контакты и Доступ</h2>
+        <!-- ДИНАМИЧЕСКИЕ КОНТАКТЫ -->
+        <div class="card">
+            <h2 style="margin-bottom: 14px;">Номера контактов</h2>
             <div id="contactsList"></div>
-            <div style="margin-top: 10px; display: flex; gap: 5px;">
-                <input type="text" id="newPhoneInput" placeholder="+7..." style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1;">
-                <button class="btn btn-sm" onclick="addContact()">Добавить</button>
+            
+            <div id="addContactForm" style="margin-top: 12px;">
+                <div class="input-row">
+                    <input type="text" id="newPhoneInput" placeholder="+79991234567">
+                    <button class="btn btn-sm" id="addContactBtn" onclick="addContact()">Добавить</button>
+                </div>
             </div>
-            <button class="btn" style="margin-top: 10px; background: #546e7a;" onclick="generateInvite()">Выдать приглашение пользователю</button>
-            <div id="inviteResult" class="invite-box"></div>
         </div>
     </div>
     
-    <div id="toast"></div>
+    <div id="toast">Уведомление</div>
 
     <script>
+        // === НАСТРОЙКИ FIREBASE ===
         const firebaseConfig = {
             apiKey: "AIzaSyACXylsaUdFHPQe8Ekju07o29_SU9w2Vsk",
             databaseURL: "https://pillbox-20842-default-rtdb.firebaseio.com"
         };
+        
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
         let currentPhones = [];
         let currentAlarms = [];
-        let userRole = 'patient';
+        let ignoreIncomingUpdatesUntil = 0;
 
-        // АВТОРИЗАЦИЯ
-        function handleLogin() {
-            const login = document.getElementById('loginUser').value;
-            const pass = document.getElementById('passUser').value;
-            const role = document.getElementById('roleUser').value;
+        let deviceClockInterval = null;
+        let localHour = 0, localMinute = 0, localSecond = 0;
+        let clockInitialized = false; // Флаг инициализации часов
+        
+        let serverTimeOffset = 0; 
+        database.ref(".info/serverTimeOffset").on("value", (snap) => {
+            serverTimeOffset = snap.val() || 0;
+        });
 
-            if ((login === "admin" && pass === "1234") || (login.length > 2 && pass === "0000")) {
-                userRole = role;
-                document.getElementById('authOverlay').style.display = 'none';
-                document.getElementById('mainContainer').style.display = 'block';
-                if (role === 'relative') {
-                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-                }
-                initSync();
+        function showToast(msg) {
+            let toast = document.getElementById("toast");
+            toast.innerText = msg; toast.className = "show";
+            setTimeout(() => { toast.className = ""; }, 2500);
+        }
+
+        // Функция спойлера
+        function toggleCollapse(contentId, chevronId) {
+            const content = document.getElementById(contentId);
+            const chevron = document.getElementById(chevronId);
+            if (content.style.display === "none") {
+                content.style.display = "block";
+                chevron.style.transform = "rotate(180deg)";
             } else {
-                alert("Неверные данные!");
+                content.style.display = "none";
+                chevron.style.transform = "rotate(0deg)";
             }
         }
 
-        function showToast(msg) {
-            const t = document.getElementById("toast");
-            t.innerText = msg; t.className = "show";
-            setTimeout(() => t.className = "", 2500);
+        // Плавный непрерывный таймер времени устройства (без постоянного пересоздания интервала)
+        setInterval(() => {
+            if (!clockInitialized) return;
+            localSecond++;
+            if (localSecond >= 60) {
+                localSecond = 0;
+                localMinute++;
+                if (localMinute >= 60) {
+                    localMinute = 0;
+                    localHour = (localHour + 1) % 24;
+                }
+            }
+            renderLocalClock();
+        }, 1000);
+
+        function syncLocalClock(timeStr, lastUpdateMs) {
+            if (!timeStr) return;
+            const parts = timeStr.split(':');
+            if (parts.length !== 3) return;
+
+            let hour = parseInt(parts[0], 10);
+            let minute = parseInt(parts[1], 10);
+            let second = parseInt(parts[2], 10);
+
+            if (lastUpdateMs) {
+                const nowMs = Date.now() + serverTimeOffset; 
+                const elapsedMs = Math.max(0, nowMs - lastUpdateMs); 
+                const elapsedSec = Math.floor(elapsedMs / 1000);
+
+                let totalSeconds = hour * 3600 + minute * 60 + second + elapsedSec;
+                
+                hour = Math.floor(totalSeconds / 3600) % 24;
+                minute = Math.floor((totalSeconds % 3600) / 60);
+                second = totalSeconds % 60;
+            }
+
+            // Вычисляем общее количество секунд для проверки расхождения
+            const currentLocalTotalSec = localHour * 3600 + localMinute * 60 + localSecond;
+            const incomingTotalSec = hour * 3600 + minute * 60 + second;
+
+            // Корректируем часы только если они не инициализированы или если рассинхронизация более 2 секунд
+            if (!clockInitialized || Math.abs(currentLocalTotalSec - incomingTotalSec) > 2) {
+                localHour = hour;
+                localMinute = minute;
+                localSecond = second;
+                clockInitialized = true;
+                renderLocalClock();
+            }
         }
 
-        function toggleCollapse(id) {
-            const el = document.getElementById(id);
-            el.style.display = el.style.display === "none" ? "block" : "none";
+        function renderLocalClock() {
+            const hStr = String(localHour).padStart(2, '0');
+            const mStr = String(localMinute).padStart(2, '0');
+            const sStr = String(localSecond).padStart(2, '0');
+            document.getElementById('time').innerText = `${hStr}:${mStr}:${sStr}`;
         }
 
-        // СИНХРОНИЗАЦИЯ
-        function initSync() {
-            database.ref('pillbox/status').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
+        // Получение статуса в реальном времени
+        database.ref('pillbox/status').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
 
-                document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
-                document.getElementById('time').innerText = data.time || '--:--:--';
+            document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
+            
+            if (data.time) {
+                syncLocalClock(data.time, data.lastUpdate);
+            } else {
+                document.getElementById('time').innerText = '--:--:--';
+            }
 
-                // Баннеры
-                const banner = document.getElementById('cupWarningBanner');
-                if (data.cupMissing) {
-                    banner.style.display = 'block';
-                    banner.className = 'alert-banner banner-stage-' + (data.cupStage || 1);
-                    banner.innerText = '⚠️ Чаша отсутствует! (Этап ' + data.cupStage + ')';
+            // Многоуровневое управление отображением предупреждающего баннера
+            const warningBanner = document.getElementById('cupWarningBanner');
+            if (data.cupMissing === true) {
+                warningBanner.style.display = 'block';
+                warningBanner.className = 'alert-banner'; // Сброс стилей
+                
+                if (data.cupStage === 1) {
+                    warningBanner.classList.add('banner-stage-1');
+                    warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов более 1 минуты. Пожалуйста, верните ее на место.';
+                } else if (data.cupStage === 2) {
+                    warningBanner.classList.add('banner-stage-2');
+                    warningBanner.innerHTML = '🔊 Внимание! Чаша отсутствует более 3 минут! На таблеточнице включен звуковой сигнал.';
+                } else if (data.cupStage === 3) {
+                    warningBanner.classList.add('banner-stage-3');
+                    warningBanner.innerHTML = '✉️ Критическая ситуация! Чаша отсутствует более 5 минут! Родственникам отправлены тревожные СМС.';
                 } else {
-                    banner.style.display = 'none';
+                    warningBanner.classList.add('banner-stage-1');
+                    warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов!';
                 }
+            } else {
+                warningBanner.style.display = 'none';
+            }
 
-                // Настройки
-                if (userRole === 'relative') {
-                    document.getElementById('smsEnabledInput').checked = data.smsEnabled;
-                    document.getElementById('buzzAlarmInput').checked = data.buzzAlarm;
-                    document.getElementById('buzzButtonsInput').checked = data.buzzButtons;
-                    document.getElementById('buzzIntakeInput').checked = data.buzzIntake;
-                    document.getElementById('buzzTareInput').checked = data.buzzTare;
-                    document.getElementById('remindEnabledInput').checked = data.remindEnabled;
-                    document.getElementById('remindTimeInput').value = data.remindTime || '12:00';
-                }
+            if (Date.now() < ignoreIncomingUpdatesUntil) {
+                return; 
+            }
 
-                currentAlarms = data.alarms || [];
-                renderAlarms();
-                currentPhones = data.phones || [];
+            // Синхронизация переключателей
+            const smsCheckbox = document.getElementById('smsEnabledInput');
+            if (document.activeElement !== smsCheckbox) {
+                smsCheckbox.checked = data.smsEnabled !== undefined ? data.smsEnabled : true;
+            }
+            
+            const bAlmCheckbox = document.getElementById('buzzAlarmInput');
+            if (document.activeElement !== bAlmCheckbox) {
+                bAlmCheckbox.checked = data.buzzAlarm !== undefined ? data.buzzAlarm : true;
+            }
+            
+            const bBtnCheckbox = document.getElementById('buzzButtonsInput');
+            if (document.activeElement !== bBtnCheckbox) {
+                bBtnCheckbox.checked = data.buzzButtons !== undefined ? data.buzzButtons : true;
+            }
+            
+            const bItkCheckbox = document.getElementById('buzzIntakeInput');
+            if (document.activeElement !== bItkCheckbox) {
+                bItkCheckbox.checked = data.buzzIntake !== undefined ? data.buzzIntake : true;
+            }
+            
+            const bTarCheckbox = document.getElementById('buzzTareInput');
+            if (document.activeElement !== bTarCheckbox) {
+                bTarCheckbox.checked = data.buzzTare !== undefined ? data.buzzTare : true;
+            }
+
+            // 1. Получение телефонов (ОБНОВЛЕНИЕ ТОЛЬКО ПРИ ИЗМЕНЕНИИ ДАННЫХ, чтобы не терять фокус)
+            let newPhones = data.phones || [];
+            if (newPhones.length === 0) {
+                if (data.phone1 && data.phone1 !== '+70000000000') newPhones.push(data.phone1);
+                if (data.phone2 && data.phone2 !== '+70000000000') newPhones.push(data.phone2);
+                if (data.phone3 && data.phone3 !== '+70000000000') newPhones.push(data.phone3);
+            }
+            if (JSON.stringify(newPhones) !== JSON.stringify(currentPhones)) {
+                currentPhones = newPhones;
                 renderContacts();
-            });
-        }
+            }
 
-        function renderAlarms() {
-            const list = document.getElementById('alarmsList');
-            list.innerHTML = '';
-            currentAlarms.forEach((a, i) => {
-                list.innerHTML += `
-                    <div class="list-item">
-                        <span>${a.time} <span class="status ${a.taken ? 'taken' : 'pending'}">${a.taken ? 'ОК' : 'Ждем'}</span></span>
-                        ${userRole === 'relative' ? `<span onclick="deleteAlarm(${i})" style="color:red; cursor:pointer;">&times;</span>` : ''}
-                    </div>`;
-            });
-        }
+            // 2. Получение будильников (ОБНОВЛЕНИЕ ТОЛЬКО ПРИ ИЗМЕНЕНИИ ДАННЫХ, чтобы не терять фокус)
+            let newAlarms = data.alarms || [];
+            if (JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms)) {
+                currentAlarms = newAlarms;
+                renderAlarms();
+            }
 
-        function renderContacts() {
-            const list = document.getElementById('contactsList');
-            list.innerHTML = '';
-            currentPhones.forEach((p, i) => {
-                list.innerHTML += `<div class="list-item"><span>${p}</span><span onclick="deleteContact(${i})" style="color:red; cursor:pointer;">&times;</span></div>`;
-            });
-        }
+            // 3. Автонапоминание
+            const enabledCheckbox = document.getElementById('remindEnabledInput');
+            if (document.activeElement !== enabledCheckbox) {
+                enabledCheckbox.checked = data.remindEnabled || false;
+                toggleReminderView(false); 
+            }
+            const timeInput = document.getElementById('remindTimeInput');
+            if (document.activeElement !== timeInput) {
+                timeInput.value = data.remindTime || '12:00';
+            }
+        });
 
-        // КОМАНДЫ
-        function triggerTare() {
-            database.ref('pillbox/commands').set({ action: "tare", timestamp: Date.now() });
-            showToast("Команда Тара отправлена");
-        }
-
+        // Отправка системной конфигурации на устройство
         function saveDeviceConfig() {
+            const smsEnabled = document.getElementById('smsEnabledInput').checked;
+            const buzzAlarm = document.getElementById('buzzAlarmInput').checked;
+            const buzzButtons = document.getElementById('buzzButtonsInput').checked;
+            const buzzIntake = document.getElementById('buzzIntakeInput').checked;
+            const buzzTare = document.getElementById('buzzTareInput').checked;
+            
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            
             database.ref('pillbox/commands').set({
                 action: "save_config",
-                smsEnabled: document.getElementById('smsEnabledInput').checked,
-                buzzAlarm: document.getElementById('buzzAlarmInput').checked,
-                buzzButtons: document.getElementById('buzzButtonsInput').checked,
-                buzzIntake: document.getElementById('buzzIntakeInput').checked,
-                buzzTare: document.getElementById('buzzTareInput').checked,
-                timestamp: Date.now()
+                smsEnabled: smsEnabled,
+                buzzAlarm: buzzAlarm,
+                buzzButtons: buzzButtons,
+                buzzIntake: buzzIntake,
+                buzzTare: buzzTare,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Системные настройки отправлены на устройство!");
+            }).catch(() => {
+                showToast("Ошибка отправки конфигурации");
+            });
+        }
+
+        // Отрисовка списка контактов
+        function renderContacts() {
+            const listDiv = document.getElementById('contactsList');
+            listDiv.innerHTML = '';
+
+            if (currentPhones.length === 0) {
+                listDiv.innerHTML = '<p style="color:#888; font-size:14px; text-align:center; margin: 8px 0;">Контакты не сохранены</p>';
+            } else {
+                currentPhones.forEach((phone, idx) => {
+                    const label = idx === 0 ? "Пациент" : `Куратор ${idx}`;
+                    listDiv.innerHTML += `
+                        <div class="list-item">
+                            <div>
+                                <span class="contact-label">${label}</span>
+                                <span style="font-weight:600; margin-left:12px; font-size:15px;">${phone}</span>
+                            </div>
+                            <span class="delete-btn" onclick="deleteContact(${idx})">&times;</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // Отрисовка списка будильников
+        function renderAlarms() {
+            const listDiv = document.getElementById('alarmsList');
+            listDiv.innerHTML = '';
+
+            if (currentAlarms.length === 0) {
+                listDiv.innerHTML = '<p style="color:#888; font-size:14px; text-align:center; margin: 8px 0;">Будильники не установлены</p>';
+            } else {
+                currentAlarms.forEach((alarm, idx) => {
+                    const statusClass = alarm.taken ? 'status taken' : 'status pending';
+                    const statusText = alarm.taken ? 'Принято' : 'Ожидает';
+                    listDiv.innerHTML += `
+                        <div class="list-item">
+                            <div style="gap: 8px;">
+                                <span class="alarm-label">Прием ${idx + 1}:</span>
+                                <input type="time" value="${alarm.time}" onchange="editAlarmTime(${idx}, this.value)" style="width: auto; padding: 4px 8px; font-size: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-weight: 600; background: #fff;">
+                                <span class="${statusClass}">${statusText}</span>
+                            </div>
+                            <span class="delete-btn" onclick="deleteAlarm(${idx})">&times;</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function editAlarmTime(idx, newTime) {
+            if (!newTime) return;
+            currentAlarms[idx].time = newTime;
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            syncAlarms();
+        }
+
+        function addContact() {
+            const input = document.getElementById('newPhoneInput');
+            let phone = input.value.trim().replace(/\s+/g, '');
+            if (!phone) { showToast("Введите номер!"); return; }
+            
+            if (!phone.startsWith('+')) {
+                if (phone.startsWith('8')) phone = '+7' + phone.substring(1);
+                else if (phone.startsWith('7')) phone = '+' + phone;
+                else phone = '+7' + phone;
+            }
+            if (phone.length < 11 || phone.length > 15) { showToast("Неверный формат номера!"); return; }
+
+            currentPhones.push(phone);
+            input.value = '';
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            renderContacts();
+            syncPhones();
+        }
+
+        function deleteContact(idx) {
+            currentPhones.splice(idx, 1);
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            renderContacts();
+            syncPhones();
+        }
+
+        function syncPhones() {
+            database.ref('pillbox/commands').set({
+                action: "save_phones",
+                list: currentPhones,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Список контактов отправлен на устройство!");
+            }).catch(() => {
+                showToast("Ошибка сохранения");
             });
         }
 
         function addAlarm() {
-            const t = document.getElementById('newAlarmInput').value;
-            if (!t) return;
-            const list = currentAlarms.map(a => a.time);
-            list.push(t);
-            database.ref('pillbox/commands').set({ action: "save_alarms", list: list, timestamp: Date.now() });
+            const input = document.getElementById('newAlarmInput');
+            const time = input.value;
+            if (!time) { showToast("Укажите время будильника!"); return; }
+
+            currentAlarms.push({ time: time, taken: false });
+            input.value = '';
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            renderAlarms();
+            syncAlarms();
         }
 
-        function deleteAlarm(i) {
-            const list = currentAlarms.filter((_, idx) => idx !== i).map(a => a.time);
-            database.ref('pillbox/commands').set({ action: "save_alarms", list: list, timestamp: Date.now() });
+        function deleteAlarm(idx) {
+            currentAlarms.splice(idx, 1);
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            renderAlarms();
+            syncAlarms();
         }
 
-        function addContact() {
-            const p = document.getElementById('newPhoneInput').value;
-            if (!p) return;
-            currentPhones.push(p);
-            database.ref('pillbox/commands').set({ action: "save_phones", list: currentPhones, timestamp: Date.now() });
+        function syncAlarms() {
+            const timeList = currentAlarms.map(a => a.time);
+            database.ref('pillbox/commands').set({
+                action: "save_alarms",
+                list: timeList,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Будильники синхронизированы!");
+            }).catch(() => {
+                showToast("Ошибка сохранения");
+            });
         }
 
-        function deleteContact(i) {
-            currentPhones.splice(i, 1);
-            database.ref('pillbox/commands').set({ action: "save_phones", list: currentPhones, timestamp: Date.now() });
+        function toggleReminderView(userClicked = false) {
+            const isChecked = document.getElementById('remindEnabledInput').checked;
+            const configDiv = document.getElementById('reminderConfig');
+            
+            if (isChecked) {
+                configDiv.style.display = 'block';
+            } else {
+                configDiv.style.display = 'none';
+                if (userClicked) {
+                    disableReminderOnServer();
+                }
+            }
         }
 
-        function generateInvite() {
-            const login = "user_" + Math.floor(Math.random()*1000);
-            const res = document.getElementById('inviteResult');
-            res.style.display = 'block';
-            res.innerText = `Приглашение создано!\nЛогин: ${login}\nПароль: 0000\nРоль: Пациент`;
-        }
-
-        function sendManualSms() {
-            const txt = document.getElementById('manualSmsText').value;
-            database.ref('pillbox/commands').set({ action: "send_now_sms", msg: txt, timestamp: Date.now() });
-            showToast("СМС отправлено");
+        function disableReminderOnServer() {
+            const time = document.getElementById('remindTimeInput').value || '12:00';
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+            database.ref('pillbox/commands').set({
+                action: "save_reminder",
+                time: time,
+                enabled: false,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Автонапоминание отключено!");
+            });
         }
 
         function saveAutoReminder() {
+            const btn = document.getElementById('saveRemindBtn');
+            const time = document.getElementById('remindTimeInput').value;
+            const enabled = document.getElementById('remindEnabledInput').checked;
+
+            if (!time) { showToast("Выберите время автонапоминания!"); return; }
+            btn.innerText = "Сохранение..."; btn.disabled = true;
+            ignoreIncomingUpdatesUntil = Date.now() + 6000;
+
             database.ref('pillbox/commands').set({
                 action: "save_reminder",
-                enabled: document.getElementById('remindEnabledInput').checked,
-                time: document.getElementById('remindTimeInput').value,
-                timestamp: Date.now()
+                time: time,
+                enabled: enabled,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Настройки сохранены!");
+                btn.innerText = "Сохранить настройки автонапоминания"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка сохранения");
+                btn.innerText = "Сохранить настройки автонапоминания"; btn.disabled = false;
+            });
+        }
+
+        function sendManualSms() {
+            const btn = document.getElementById('sendManualBtn');
+            const text = document.getElementById('manualSmsText').value;
+            if (!text) { showToast("Введите текст сообщения!"); return; }
+
+            btn.innerText = "Команда..."; btn.disabled = true;
+
+            database.ref('pillbox/commands').set({
+                action: "send_now_sms",
+                msg: text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Запрос отправлен!");
+                btn.innerText = "Отправить"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка соединения");
+                btn.innerText = "Отправить"; btn.disabled = false;
+            });
+        }
+
+        function triggerTare() {
+            const btn = document.getElementById('tareBtn');
+            btn.innerText = "Обнуление весов..."; btn.disabled = true;
+            database.ref('pillbox/commands').set({
+                action: "tare",
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Тара обнулена!");
+                btn.innerText = "Сбросить вес"; btn.disabled = false;
+            }).catch(() => {
+                showToast("Ошибка сети");
+                btn.innerText = "Сбросить вес"; btn.disabled = false;
             });
         }
     </script>

@@ -321,7 +321,7 @@
             display: flex;
             gap: 10px;
         }
-        input[type="text"], input[type="time"], input[type="email"], input[type="password"], select { 
+        input[type="text"], input[type="time"], input[type="password"], select { 
             width: 100%; 
             box-sizing: border-box; 
             padding: 14px; 
@@ -334,7 +334,7 @@
             outline: none;
             transition: border-color 0.15s ease;
         }
-        input[type="text"]:focus, input[type="time"]:focus, input[type="email"]:focus, input[type="password"]:focus, select:focus {
+        input[type="text"]:focus, input[type="time"]:focus, input[type="password"]:focus, select:focus {
             border-color: var(--primary-color);
         }
         input[type="time"] {
@@ -342,7 +342,7 @@
             flex-grow: 1;
         }
 
-        /* АНИМАЦИЯ: Интерактивные парящие кнопки */
+        /* АНИМАЦИЯ: Интерактивные кнопки */
         .btn { 
             display: inline-flex; 
             align-items: center; 
@@ -512,14 +512,14 @@
 
             <!-- Форма входа -->
             <div id="formLogin" class="input-group">
-                <input type="email" id="loginEmail" placeholder="Email">
+                <input type="text" id="loginUsername" placeholder="Логин (Английские буквы)">
                 <input type="password" id="loginPassword" placeholder="Пароль">
                 <button class="btn" onclick="loginUser()">Войти</button>
             </div>
 
             <!-- Форма регистрации -->
             <div id="formRegister" class="input-group" style="display: none;">
-                <input type="email" id="regEmail" placeholder="Email">
+                <input type="text" id="regUsername" placeholder="Придумайте логин (Английские буквы)">
                 <input type="password" id="regPassword" placeholder="Пароль">
                 <select id="regRole">
                     <option value="patient">Пациент (полный доступ)</option>
@@ -653,7 +653,7 @@
             <div class="input-group">
                 <p style="font-size:13px; color:#555; margin:0;">Создайте уникальную ссылку для вашего родственника, чтобы он мог войти в систему под своей ролью.</p>
                 <div class="input-row">
-                    <input type="email" id="inviteEmailInput" placeholder="Email родственника">
+                    <input type="text" id="inviteUsernameInput" placeholder="Логин родственника">
                     <button class="btn btn-sm" onclick="generateInvite()">Создать</button>
                 </div>
                 <div id="inviteResult" style="margin-top: 8px;"></div>
@@ -677,7 +677,7 @@
         let currentPhones = [];
         let currentAlarms = [];
         let ignoreIncomingUpdatesUntil = 0;
-        let currentUserRole = "patient"; // По умолчанию
+        let currentUserRole = "patient"; 
 
         let deviceClockInterval = null;
         let localHour = 0, localMinute = 0, localSecond = 0;
@@ -687,6 +687,11 @@
         database.ref(".info/serverTimeOffset").on("value", (snap) => {
             serverTimeOffset = snap.val() || 0;
         });
+
+        // Функция хелпер: преобразует обычный логин во внутренний виртуальный email
+        function toEmail(username) {
+            return username.toLowerCase().trim() + "@pillbox.local";
+        }
 
         // === ОБРАБОТЧИК АВТОРИЗАЦИИ ===
         auth.onAuthStateChanged((user) => {
@@ -698,10 +703,9 @@
                         currentUserRole = profile.role || 'patient';
                         initApp();
                     } else {
-                        // Если профиля нет (первый вход), создаем как пациента
                         currentUserRole = 'patient';
                         database.ref('pillbox/users/' + user.uid).set({
-                            email: user.email,
+                            username: user.email.split('@')[0],
                             role: 'patient'
                         }).then(() => {
                             initApp();
@@ -709,10 +713,9 @@
                     }
                 });
             } else {
-                // Пользователь не авторизован. Показываем форму авторизации.
                 document.getElementById('authContainer').style.display = 'block';
                 document.getElementById('appContainer').style.display = 'none';
-                checkUrlInvitations(); // Проверяем, осуществлен ли переход по приглашению
+                checkUrlInvitations(); 
             }
         });
 
@@ -758,63 +761,88 @@
         }
 
         function loginUser() {
-            const email = document.getElementById('loginEmail').value.trim();
+            const username = document.getElementById('loginUsername').value.trim();
             const pass = document.getElementById('loginPassword').value;
 
-            if (!email || !pass) { showToast("Заполните все поля!"); return; }
+            if (!username || !pass) { showToast("Заполните все поля!"); return; }
+
+            const email = toEmail(username);
 
             auth.signInWithEmailAndPassword(email, pass)
                 .then(() => {
                     showToast("Успешный вход!");
                 })
                 .catch((err) => {
-                    showToast("Ошибка входа: " + err.message);
+                    showToast("Ошибка входа. Проверьте правильность логина или пароля.");
                 });
         }
 
         function registerUser() {
-            const email = document.getElementById('regEmail').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
             const pass = document.getElementById('regPassword').value;
             const role = document.getElementById('regRole').value;
 
-            if (!email || !pass) { showToast("Заполните все поля!"); return; }
+            if (!username || !pass) { showToast("Заполните все поля!"); return; }
             if (pass.length < 6) { showToast("Пароль должен быть не менее 6 символов!"); return; }
 
-            auth.createUserWithEmailAndPassword(email, pass)
+            const usernameRegex = /^[a-zA-Z0-9_\-]+$/;
+            if (!usernameRegex.test(username)) {
+                showToast("Логин может содержать только латинские буквы, цифры, подчёркивание и дефис!");
+                return;
+            }
+
+            const cleanUsername = username.toLowerCase();
+            const email = toEmail(cleanUsername);
+
+            // Проверка логина на уникальность в БД перед регистрацией
+            database.ref('pillbox/usernames/' + cleanUsername).once('value')
+                .then((snap) => {
+                    if (snap.exists()) {
+                        throw new Error("Этот логин уже занят!");
+                    }
+                    return auth.createUserWithEmailAndPassword(email, pass);
+                })
                 .then((cred) => {
-                    // Записываем данные роли в БД
-                    return database.ref('pillbox/users/' + cred.user.uid).set({
-                        email: email,
+                    const batch = {};
+                    batch['pillbox/users/' + cred.user.uid] = {
+                        username: cleanUsername,
                         role: role
-                    });
+                    };
+                    batch['pillbox/usernames/' + cleanUsername] = cred.user.uid;
+                    return database.ref().update(batch);
                 })
                 .then(() => {
                     showToast("Регистрация успешна!");
                 })
                 .catch((err) => {
-                    showToast("Ошибка регистрации: " + err.message);
+                    showToast(err.message);
                 });
         }
 
         function logoutUser() {
             auth.signOut().then(() => {
                 showToast("Вы вышли из аккаунта");
-                // Сброс адресной строки от токенов
                 window.history.replaceState({}, document.title, window.location.pathname);
             });
         }
 
         // === СИСТЕМА ПРИГЛАШЕНИЙ ===
         function generateInvite() {
-            const email = document.getElementById('inviteEmailInput').value.trim();
-            if (!email) { showToast("Введите email родственника!"); return; }
+            const username = document.getElementById('inviteUsernameInput').value.trim();
+            if (!username) { showToast("Введите логин родственника!"); return; }
 
-            // Генерируем случайный токен ссылки
+            const usernameRegex = /^[a-zA-Z0-9_\-]+$/;
+            if (!usernameRegex.test(username)) {
+                showToast("Логин может содержать только латинские буквы, цифры, подчёркивание и дефис!");
+                return;
+            }
+
+            const cleanUsername = username.toLowerCase();
             const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
             const inviteUrl = window.location.origin + window.location.pathname + "?invite=" + token;
 
             database.ref('pillbox/invitations/' + token).set({
-                email: email,
+                username: cleanUsername,
                 role: 'relative',
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
@@ -846,7 +874,8 @@
                     const inviteData = snap.val();
                     if (inviteData) {
                         switchAuthTab('register');
-                        document.getElementById('regEmail').value = inviteData.email;
+                        document.getElementById('regUsername').value = inviteData.username;
+                        document.getElementById('regUsername').disabled = true; // Блокируем изменение логина
                         document.getElementById('regRole').value = 'relative';
                         document.getElementById('regRole').disabled = true; // Блокируем изменение роли
                         showToast("Приглашение принято! Пожалуйста, придумайте пароль.");

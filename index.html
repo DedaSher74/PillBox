@@ -3,31 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Умная Таблеточница - Система Контроля</title>
-    
-    <!-- Firebase SDK -->
+    <title>Умная Таблеточница - Панель управления</title>
+    <!-- Библиотеки Firebase v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <style>
         :root {
-            --bg-color: #eef5f6;
+            --bg-color: #eef5f6; 
             --card-bg: rgba(255, 255, 255, 0.96); 
             --text-color: #2c3e50;
-            --primary-color: #009688;
+            --primary-color: #009688; 
             --primary-hover: #00796b;
             --success-color: #2e7d32; 
             --pending-color: #c62828;
             --border-color: rgba(0, 150, 136, 0.15);
         }
-
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background: var(--bg-color); 
-            color: var(--text-color);
-            margin: 0; padding: 0; 
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; overflow-x: hidden;
+            color: var(--text-color); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            box-sizing: border-box;
         }
 
         /* === ОКНО АВТОРИЗАЦИИ === */
@@ -38,18 +41,20 @@
         }
         .auth-card {
             background: white; padding: 40px; border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 90%; max-width: 380px;
-            text-align: center; position: relative; z-index: 1001;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 100%; max-width: 350px;
+            text-align: center; z-index: 1001;
         }
-        .auth-card h1 { color: var(--primary-color); margin-bottom: 25px; font-size: 28px; }
+        .auth-card h1 { color: var(--primary-color); margin-bottom: 20px; }
         .auth-card input, .auth-card select {
-            width: 100%; padding: 14px; margin-bottom: 15px;
-            border-radius: 12px; border: 1.5px solid var(--border-color);
-            box-sizing: border-box; font-size: 16px; outline: none;
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            border-radius: 10px; border: 1px solid var(--border-color);
+            box-sizing: border-box; font-size: 16px;
         }
-        .auth-card input:focus { border-color: var(--primary-color); }
 
-        /* === ФОНОВАЯ АНИМАЦИЯ (ТАБЛЕТКИ) === */
+        /* Скрытие элементов для роли Пациент */
+        .admin-only { display: none; }
+
+        /* === КОНТЕЙНЕР ДЛЯ ЛЕТАЮЩИХ ТАБЛЕТОК === */
         .bg-animation {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: 0; overflow: hidden; pointer-events: none;
@@ -57,157 +62,188 @@
         .capsule {
             position: absolute; bottom: -70px; width: 14px; height: 32px; border-radius: 12px;
             background: linear-gradient(to bottom, var(--primary-color) 50%, #ffffff 50%);
-            opacity: 0.6; animation: float infinite linear;
+            border: 1px solid rgba(0, 150, 136, 0.2);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
         }
         .tablet {
             position: absolute; bottom: -70px; border-radius: 50%; background: #ffffff;
-            opacity: 0.6; border: 1px solid var(--border-color); animation: float infinite linear;
+            border: 1px solid rgba(0, 150, 136, 0.15);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
         }
-        @keyframes float {
-            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
-            100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+        .fly-left { animation: floatLeft 18s infinite linear; }
+        .fly-right { animation: floatRight 24s infinite linear; }
+
+        @keyframes floatLeft {
+            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.9; }
+            90% { opacity: 0.9; }
+            100% { transform: translateY(-115vh) translateX(-50px) rotate(-360deg); opacity: 0; }
+        }
+        @keyframes floatRight {
+            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.9; }
+            90% { opacity: 0.9; }
+            100% { transform: translateY(-115vh) translateX(60px) rotate(360deg); opacity: 0; }
         }
 
-        /* === ОСНОВНОЙ КОНТЕНТ === */
-        #mainContent { display: none; width: 100%; max-width: 500px; padding: 20px; z-index: 2; box-sizing: border-box; }
+        .container { width: 100%; max-width: 500px; z-index: 2; position: relative; display: none; }
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { font-size: 26px; margin: 0 0 8px 0; color: var(--primary-color); font-weight: 700; }
         
-        .card { 
-            background: var(--card-bg); border-radius: 20px; padding: 24px; 
-            margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0, 79, 70, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.8); position: relative;
+        .time-box { 
+            font-size: 14px; color: #5a738e; background: #ffffff; padding: 6px 14px;
+            border-radius: 20px; display: inline-flex; align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 150, 136, 0.08);
         }
-        .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #7f8c8d; margin-top: 0; }
+
+        .online-indicator {
+            display: inline-block; width: 8px; height: 8px; background-color: var(--success-color);
+            border-radius: 50%; margin-right: 8px; animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 125, 50, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+        }
+
+        .card { 
+            background: var(--card-bg); border-radius: 16px; padding: 22px; margin-bottom: 16px; 
+            box-shadow: 0 10px 30px rgba(0, 79, 70, 0.04); border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        .card h2 { font-size: 14px; margin: 0; text-transform: uppercase; color: #617d7a; letter-spacing: 0.8px; font-weight: 700; }
 
         .weight-display { 
-            font-size: 54px; font-weight: 800; text-align: center; margin: 20px 0;
-            color: var(--text-color); font-feature-settings: "tnum";
+            font-size: 48px; font-weight: 800; text-align: center; margin: 15px 0 20px 0; 
+            color: #1a252f; font-feature-settings: "tnum"; 
+        }
+        
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #fafdfd; padding: 14px 18px; border-radius: 12px;
+            margin-bottom: 8px; border: 1px solid var(--border-color);
         }
 
         .btn { 
-            width: 100%; padding: 16px; background: var(--primary-color); color: white; 
-            border: none; border-radius: 14px; font-size: 16px; font-weight: 600; 
-            cursor: pointer; transition: 0.3s; box-shadow: 0 4px 12px rgba(0, 150, 136, 0.2);
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 100%; padding: 15px; background-color: var(--primary-color); 
+            color: white; border: none; border-radius: 12px; font-size: 16px; 
+            font-weight: 600; cursor: pointer; transition: 0.2s;
         }
-        .btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .btn:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
+        .btn-sm { padding: 14px 22px; width: auto; }
+        
+        .status { font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
+        .status.taken { background-color: rgba(46,125,50,0.1); color: var(--success-color); }
+        .status.pending { background-color: rgba(198,40,40,0.1); color: var(--pending-color); }
 
-        .list-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background: #f8fbfb; padding: 14px; border-radius: 12px; margin-bottom: 10px;
-            border: 1px solid var(--border-color);
-        }
+        .alert-banner { display: none; padding: 16px; border-radius: 14px; text-align: center; font-weight: 700; margin-bottom: 16px; font-size: 14px; }
+        .banner-stage-1 { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .banner-stage-2 { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; animation: bannerPulse 1.8s infinite; }
+        .banner-stage-3 { background-color: #7f1d1d; color: #fee2e2; border: 1px solid #991b1b; }
+        @keyframes bannerPulse { 0% { transform: scale(1); } 50% { transform: scale(1.015); } 100% { transform: scale(1); } }
 
-        .status-tag {
-            font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 700;
-        }
-        .status-taken { background: rgba(46, 125, 50, 0.1); color: var(--success-color); }
-        .status-pending { background: rgba(198, 40, 40, 0.1); color: var(--pending-color); }
-
-        /* Ролевое скрытие */
-        .admin-only { display: none; }
-
-        #toast {
-            visibility: hidden; min-width: 280px; background: #2c3e50; color: white;
-            text-align: center; border-radius: 12px; padding: 16px; position: fixed;
-            left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 2000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
-
-        .invite-box {
-            background: #f0fdfa; border: 2px dashed var(--primary-color);
-            padding: 15px; border-radius: 12px; margin-top: 15px; display: none;
-        }
+        #toast { visibility: hidden; min-width: 260px; background-color: #2c3e50; color: #fff; text-align: center; border-radius: 10px; padding: 16px; position: fixed; z-index: 999; left: 50%; bottom: 30px; transform: translateX(-50%); transition: opacity 0.2s linear; opacity: 0; }
+        #toast.show { visibility: visible; opacity: 1; }
+        
+        .invite-box { background: #f0fdfa; border: 2px dashed var(--primary-color); padding: 15px; border-radius: 12px; margin-top: 10px; display: none; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <!-- АНИМАЦИЯ ФОНА -->
-    <div class="bg-animation" id="bgAnim"></div>
+    <!-- ФОНОВАЯ АНИМАЦИЯ -->
+    <div class="bg-animation">
+        <div class="capsule fly-left" style="left: 10%; animation-delay: 0s;"></div>
+        <div class="tablet fly-right" style="left: 30%; animation-delay: 5s; width: 20px; height: 20px;"></div>
+        <div class="capsule fly-left" style="left: 60%; animation-delay: 2s;"></div>
+        <div class="tablet fly-right" style="left: 80%; animation-delay: 8s; width: 25px; height: 25px;"></div>
+    </div>
 
     <!-- ОКНО ВХОДА -->
     <div id="authOverlay">
         <div class="auth-card">
-            <h1>Вход в систему</h1>
-            <input type="text" id="loginUser" placeholder="Логин (admin или имя)">
-            <input type="password" id="passUser" placeholder="Пароль (1234 или 0000)">
+            <h1>Вход в PillBox</h1>
+            <input type="text" id="loginUser" placeholder="Логин (admin)">
+            <input type="password" id="passUser" placeholder="Пароль (1234)">
             <select id="roleUser">
-                <option value="relative">Я — Родственник (Полный доступ)</option>
-                <option value="patient">Я — Пациент (Только просмотр)</option>
+                <option value="relative">Я — Родственник</option>
+                <option value="patient">Я — Пациент</option>
             </select>
-            <button class="btn" onclick="handleLogin()">Войти в панель</button>
-            <p style="font-size: 12px; color: #95a5a6; margin-top: 20px;">
-                Для получения доступа обратитесь к администратору системы
-            </p>
+            <button class="btn" onclick="handleLogin()">Войти</button>
         </div>
     </div>
 
-    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
-    <div id="mainContent">
-        <header style="text-align: center; margin-bottom: 25px;">
-            <h1 style="margin: 0; color: var(--primary-color);">PillBox Control</h1>
-            <div style="margin-top: 10px;">
-                <span id="roleBadge" style="background: white; padding: 5px 15px; border-radius: 20px; font-size: 13px; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    Роль: <span id="roleName">--</span>
-                </span>
-                <button onclick="location.reload()" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:13px; margin-left:10px;">Выйти</button>
+    <div class="container" id="mainContainer">
+        <header>
+            <h1>Таблеточница v1.5</h1>
+            <div class="time-box">
+                <span class="online-indicator"></span>
+                Время: &nbsp;<span id="time" style="font-weight: bold;">--:--:--</span>
+                <a href="#" onclick="location.reload()" style="margin-left:15px; color:#c62828; text-decoration:none; font-size:12px;">Выход</a>
             </div>
         </header>
 
+        <div id="cupWarningBanner" class="alert-banner"></div>
+        
         <!-- ВЕС -->
         <div class="card">
-            <h2>Текущий вес лекарств</h2>
+            <h2>Текущий вес</h2>
             <div class="weight-display" id="weight">0.00 г</div>
-            <button class="btn admin-only" id="tareBtn" onclick="triggerTare()">Обнулить весы (Тара)</button>
+            <button class="btn admin-only" id="tareBtn" onclick="triggerTare()">Сбросить вес</button>
+        </div>
+        
+        <!-- СИСТЕМНЫЕ НАСТРОЙКИ -->
+        <div class="card admin-only">
+            <div onclick="toggleCollapse('systemSettingsContent')" style="display: flex; justify-content: space-between; cursor: pointer;">
+                <h2>Системные настройки</h2>
+                <span>▼</span>
+            </div>
+            <div id="systemSettingsContent" style="display: none; margin-top: 15px;">
+                <label><input type="checkbox" id="smsEnabledInput" onchange="saveDeviceConfig()"> Разрешить СМС</label><br><br>
+                <label><input type="checkbox" id="buzzAlarmInput" onchange="saveDeviceConfig()"> Звук будильника</label><br>
+                <label><input type="checkbox" id="buzzButtonsInput" onchange="saveDeviceConfig()"> Звук кнопок</label><br>
+                <label><input type="checkbox" id="buzzIntakeInput" onchange="saveDeviceConfig()"> Звук приема</label><br>
+                <label><input type="checkbox" id="buzzTareInput" onchange="saveDeviceConfig()"> Звук тары</label>
+            </div>
         </div>
 
         <!-- БУДИЛЬНИКИ -->
         <div class="card">
-            <h2>График приема</h2>
+            <h2>Будильники</h2>
             <div id="alarmsList"></div>
-            <div class="admin-only" style="display: flex; gap: 10px; margin-top: 15px;">
-                <input type="time" id="newAlarmTime" style="flex-grow: 1; padding: 12px; border-radius: 10px; border: 1px solid #ddd;">
-                <button class="btn" style="width: auto; padding: 12px 20px;" onclick="addAlarm()">+</button>
+            <div class="admin-only" style="margin-top: 10px; display: flex; gap: 5px;">
+                <input type="time" id="newAlarmInput" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1;">
+                <button class="btn btn-sm" onclick="addAlarm()">+</button>
             </div>
         </div>
 
-        <!-- ПРИГЛАШЕНИЯ (ТОЛЬКО ДЛЯ РОДСТВЕННИКА) -->
+        <!-- СМС -->
         <div class="card admin-only">
-            <h2>Выдать доступ (Приглашение)</h2>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="invitePhone" placeholder="+7 (___) ___-__-__" style="flex-grow: 1; padding: 12px; border-radius: 10px; border: 1px solid #ddd;">
-                <button class="btn" style="width: auto; padding: 12px 20px;" onclick="generateInvite()">Создать</button>
+            <h2>СМС Пациенту</h2>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="manualSmsText" value="Прими таблетку!" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1;">
+                <button class="btn btn-sm" onclick="sendManualSms()">Отправить</button>
             </div>
-            <div id="inviteResult" class="invite-box">
-                <p style="margin: 0 0 10px 0; font-weight: bold; color: var(--primary-color);">Данные для входа:</p>
-                <code id="inviteText" style="display: block; background: white; padding: 10px; border-radius: 6px; font-size: 13px;"></code>
-                <button class="btn" style="margin-top: 10px; padding: 8px; font-size: 12px;" onclick="copyInvite()">Копировать текст</button>
-            </div>
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+            <label><input type="checkbox" id="remindEnabledInput" onchange="saveAutoReminder()"> Автонапоминание</label>
+            <input type="time" id="remindTimeInput" style="margin-left: 10px; padding: 5px;">
         </div>
-
-        <!-- СИСТЕМНЫЕ НАСТРОЙКИ (ТОЛЬКО ДЛЯ РОДСТВЕННИКА) -->
+        
+        <!-- КОНТАКТЫ И ПРИГЛАШЕНИЯ -->
         <div class="card admin-only">
-            <h2>Настройки устройства</h2>
-            <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer;">
-                <input type="checkbox" id="smsToggle" onchange="updateConfig()"> 
-                <span>Разрешить СМС-оповещения</span>
-            </label>
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                <input type="checkbox" id="buzzerToggle" onchange="updateConfig()"> 
-                <span>Звуковой сигнал (Зуммер)</span>
-            </label>
+            <h2>Контакты и Доступ</h2>
+            <div id="contactsList"></div>
+            <div style="margin-top: 10px; display: flex; gap: 5px;">
+                <input type="text" id="newPhoneInput" placeholder="+7..." style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1;">
+                <button class="btn btn-sm" onclick="addContact()">Добавить</button>
+            </div>
+            <button class="btn" style="margin-top: 10px; background: #546e7a;" onclick="generateInvite()">Выдать приглашение пользователю</button>
+            <div id="inviteResult" class="invite-box"></div>
         </div>
     </div>
-
+    
     <div id="toast"></div>
 
     <script>
-        // === КОНФИГУРАЦИЯ FIREBASE ===
         const firebaseConfig = {
             apiKey: "AIzaSyACXylsaUdFHPQe8Ekju07o29_SU9w2Vsk",
             databaseURL: "https://pillbox-20842-default-rtdb.firebaseio.com"
@@ -215,165 +251,160 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        let currentPhones = [];
+        let currentAlarms = [];
         let userRole = 'patient';
-        let alarmsData = [];
 
-        // ГЕНЕРАЦИЯ ЛЕТАЮЩИХ ТАБЛЕТОК
-        function createBg() {
-            const container = document.getElementById('bgAnim');
-            for (let i = 0; i < 15; i++) {
-                const isCapsule = Math.random() > 0.5;
-                const el = document.createElement('div');
-                el.className = isCapsule ? 'capsule' : 'tablet';
-                el.style.left = Math.random() * 100 + 'vw';
-                el.style.animationDuration = (Math.random() * 10 + 10) + 's';
-                el.style.animationDelay = (Math.random() * 5) + 's';
-                if (!isCapsule) {
-                    const size = Math.random() * 15 + 15 + 'px';
-                    el.style.width = size; el.style.height = size;
+        // АВТОРИЗАЦИЯ
+        function handleLogin() {
+            const login = document.getElementById('loginUser').value;
+            const pass = document.getElementById('passUser').value;
+            const role = document.getElementById('roleUser').value;
+
+            if ((login === "admin" && pass === "1234") || (login.length > 2 && pass === "0000")) {
+                userRole = role;
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                if (role === 'relative') {
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
                 }
-                container.appendChild(el);
+                initSync();
+            } else {
+                alert("Неверные данные!");
             }
         }
-        createBg();
 
         function showToast(msg) {
             const t = document.getElementById("toast");
             t.innerText = msg; t.className = "show";
-            setTimeout(() => t.className = "", 3000);
+            setTimeout(() => t.className = "", 2500);
         }
 
-        // ЛОГИКА ВХОДА
-        function handleLogin() {
-            const login = document.getElementById('loginUser').value.trim();
-            const pass = document.getElementById('passUser').value.trim();
-            const role = document.getElementById('roleUser').value;
-
-            // Простая проверка (в реальном проекте заменить на Firebase Auth)
-            if ((login === "admin" && pass === "1234") || (login.length > 2 && pass === "0000")) {
-                userRole = role;
-                document.getElementById('authOverlay').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-                document.getElementById('roleName').innerText = role === 'relative' ? 'Родственник' : 'Пациент';
-                
-                if (role === 'relative') {
-                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-                }
-                
-                showToast("Вход выполнен успешно!");
-                startSync();
-            } else {
-                showToast("Ошибка: Неверный логин или пароль");
-            }
+        function toggleCollapse(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === "none" ? "block" : "none";
         }
 
-        // СИНХРОНИЗАЦИЯ ДАННЫХ
-        function startSync() {
+        // СИНХРОНИЗАЦИЯ
+        function initSync() {
             database.ref('pillbox/status').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
 
-                // Обновление веса
                 document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
-                
-                // Обновление настроек (только если мы админ)
-                if (userRole === 'relative') {
-                    document.getElementById('smsToggle').checked = data.smsEnabled ?? true;
-                    document.getElementById('buzzerToggle').checked = data.buzzAlarm ?? true;
+                document.getElementById('time').innerText = data.time || '--:--:--';
+
+                // Баннеры
+                const banner = document.getElementById('cupWarningBanner');
+                if (data.cupMissing) {
+                    banner.style.display = 'block';
+                    banner.className = 'alert-banner banner-stage-' + (data.cupStage || 1);
+                    banner.innerText = '⚠️ Чаша отсутствует! (Этап ' + data.cupStage + ')';
+                } else {
+                    banner.style.display = 'none';
                 }
 
-                // Обновление будильников
-                alarmsData = data.alarms || [];
+                // Настройки
+                if (userRole === 'relative') {
+                    document.getElementById('smsEnabledInput').checked = data.smsEnabled;
+                    document.getElementById('buzzAlarmInput').checked = data.buzzAlarm;
+                    document.getElementById('buzzButtonsInput').checked = data.buzzButtons;
+                    document.getElementById('buzzIntakeInput').checked = data.buzzIntake;
+                    document.getElementById('buzzTareInput').checked = data.buzzTare;
+                    document.getElementById('remindEnabledInput').checked = data.remindEnabled;
+                    document.getElementById('remindTimeInput').value = data.remindTime || '12:00';
+                }
+
+                currentAlarms = data.alarms || [];
                 renderAlarms();
+                currentPhones = data.phones || [];
+                renderContacts();
             });
         }
 
         function renderAlarms() {
             const list = document.getElementById('alarmsList');
             list.innerHTML = '';
-            
-            if (alarmsData.length === 0) {
-                list.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">Список пуст</p>';
-                return;
-            }
-
-            alarmsData.forEach((alarm, index) => {
-                const item = document.createElement('div');
-                item.className = 'list-item';
-                item.innerHTML = `
-                    <div>
-                        <span style="font-weight:bold; font-size:16px;">${alarm.time}</span>
-                        <span class="status-tag ${alarm.taken ? 'status-taken' : 'status-pending'}" style="margin-left:10px;">
-                            ${alarm.taken ? 'Принято' : 'Ожидает'}
-                        </span>
-                    </div>
-                    ${userRole === 'relative' ? `<button onclick="deleteAlarm(${index})" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:20px;">&times;</button>` : ''}
-                `;
-                list.appendChild(item);
+            currentAlarms.forEach((a, i) => {
+                list.innerHTML += `
+                    <div class="list-item">
+                        <span>${a.time} <span class="status ${a.taken ? 'taken' : 'pending'}">${a.taken ? 'ОК' : 'Ждем'}</span></span>
+                        ${userRole === 'relative' ? `<span onclick="deleteAlarm(${i})" style="color:red; cursor:pointer;">&times;</span>` : ''}
+                    </div>`;
             });
         }
 
-        // КОМАНДЫ УСТРОЙСТВУ
+        function renderContacts() {
+            const list = document.getElementById('contactsList');
+            list.innerHTML = '';
+            currentPhones.forEach((p, i) => {
+                list.innerHTML += `<div class="list-item"><span>${p}</span><span onclick="deleteContact(${i})" style="color:red; cursor:pointer;">&times;</span></div>`;
+            });
+        }
+
+        // КОМАНДЫ
         function triggerTare() {
+            database.ref('pillbox/commands').set({ action: "tare", timestamp: Date.now() });
+            showToast("Команда Тара отправлена");
+        }
+
+        function saveDeviceConfig() {
             database.ref('pillbox/commands').set({
-                action: "tare",
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => showToast("Команда обнуления отправлена"));
+                action: "save_config",
+                smsEnabled: document.getElementById('smsEnabledInput').checked,
+                buzzAlarm: document.getElementById('buzzAlarmInput').checked,
+                buzzButtons: document.getElementById('buzzButtonsInput').checked,
+                buzzIntake: document.getElementById('buzzIntakeInput').checked,
+                buzzTare: document.getElementById('buzzTareInput').checked,
+                timestamp: Date.now()
+            });
         }
 
         function addAlarm() {
-            const time = document.getElementById('newAlarmTime').value;
-            if (!time) return;
-            
-            const newAlarms = [...alarmsData.map(a => a.time), time];
-            database.ref('pillbox/commands').set({
-                action: "save_alarms",
-                list: newAlarms,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                showToast("Будильник добавлен");
-                document.getElementById('newAlarmTime').value = '';
-            });
+            const t = document.getElementById('newAlarmInput').value;
+            if (!t) return;
+            const list = currentAlarms.map(a => a.time);
+            list.push(t);
+            database.ref('pillbox/commands').set({ action: "save_alarms", list: list, timestamp: Date.now() });
         }
 
-        function deleteAlarm(index) {
-            const newAlarms = alarmsData.filter((_, i) => i !== index).map(a => a.time);
-            database.ref('pillbox/commands').set({
-                action: "save_alarms",
-                list: newAlarms,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => showToast("Будильник удален"));
+        function deleteAlarm(i) {
+            const list = currentAlarms.filter((_, idx) => idx !== i).map(a => a.time);
+            database.ref('pillbox/commands').set({ action: "save_alarms", list: list, timestamp: Date.now() });
         }
 
-        function updateConfig() {
-            const sms = document.getElementById('smsToggle').checked;
-            const buzz = document.getElementById('buzzerToggle').checked;
-            
-            database.ref('pillbox/commands').set({
-                action: "save_config",
-                smsEnabled: sms,
-                buzzAlarm: buzz,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
+        function addContact() {
+            const p = document.getElementById('newPhoneInput').value;
+            if (!p) return;
+            currentPhones.push(p);
+            database.ref('pillbox/commands').set({ action: "save_phones", list: currentPhones, timestamp: Date.now() });
         }
 
-        // СИСТЕМА ПРИГЛАШЕНИЙ
+        function deleteContact(i) {
+            currentPhones.splice(i, 1);
+            database.ref('pillbox/commands').set({ action: "save_phones", list: currentPhones, timestamp: Date.now() });
+        }
+
         function generateInvite() {
-            const phone = document.getElementById('invitePhone').value.trim();
-            if (phone.length < 10) { showToast("Введите номер телефона!"); return; }
-
-            const login = "user_" + Math.floor(1000 + Math.random() * 9000);
-            const pass = "0000";
-            const text = `Доступ к PillBox для ${phone}:\nЛогин: ${login}\nПароль: ${pass}\nРоль: Пациент`;
-            
-            document.getElementById('inviteText').innerText = text;
-            document.getElementById('inviteResult').style.display = 'block';
-            showToast("Приглашение создано");
+            const login = "user_" + Math.floor(Math.random()*1000);
+            const res = document.getElementById('inviteResult');
+            res.style.display = 'block';
+            res.innerText = `Приглашение создано!\nЛогин: ${login}\nПароль: 0000\nРоль: Пациент`;
         }
 
-        function copyInvite() {
-            const text = document.getElementById('inviteText').innerText;
-            navigator.clipboard.writeText(text).then(() => showToast("Скопировано в буфер обмена"));
+        function sendManualSms() {
+            const txt = document.getElementById('manualSmsText').value;
+            database.ref('pillbox/commands').set({ action: "send_now_sms", msg: txt, timestamp: Date.now() });
+            showToast("СМС отправлено");
+        }
+
+        function saveAutoReminder() {
+            database.ref('pillbox/commands').set({
+                action: "save_reminder",
+                enabled: document.getElementById('remindEnabledInput').checked,
+                time: document.getElementById('remindTimeInput').value,
+                timestamp: Date.now()
+            });
         }
     </script>
 </body>

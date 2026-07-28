@@ -652,9 +652,13 @@
             <h2 style="margin-bottom: 14px;">Пригласить родственника</h2>
             <div class="input-group">
                 <p style="font-size:13px; color:#555; margin:0;">Создайте уникальную ссылку для вашего родственника, чтобы он мог войти в систему под своей ролью.</p>
-                <div class="input-row">
+                <div class="input-row" style="margin-top: 12px;">
                     <input type="text" id="inviteUsernameInput" placeholder="Логин родственника">
-                    <button class="btn btn-sm" onclick="generateInvite()">Создать</button>
+                    <input type="text" id="invitePhoneInput" placeholder="Номер телефона (+79991234567)">
+                </div>
+                <div class="input-row" style="margin-top: 10px; display: flex; gap: 10px;">
+                    <button class="btn btn-sm" style="flex: 1;" onclick="generateInvite()">Создать ссылку</button>
+                    <button class="btn btn-sm" style="flex: 1; background-color: var(--primary-color);" onclick="sendInviteSms()">Отправить по СМС</button>
                 </div>
                 <div id="inviteResult" style="margin-top: 8px;"></div>
             </div>
@@ -666,8 +670,14 @@
     <script>
         // === НАСТРОЙКИ FIREBASE ===
         const firebaseConfig = {
-            apiKey: "AIzaSyACXylsaUdFHPQe8Ekju07o29_SU9w2Vsk",
-            databaseURL: "https://pillbox-20842-default-rtdb.firebaseio.com"
+            apiKey: "AIzaSyACXylsaUdFHPQe8EKju07o29_SU9w2Vsk",
+            authDomain: "pillbox-20842.firebaseapp.com",
+            databaseURL: "https://pillbox-20842-default-rtdb.firebaseio.com",
+            projectId: "pillbox-20842",
+            storageBucket: "pillbox-20842.firebasestorage.app",
+            messagingSenderId: "567973579954",
+            appId: "1:567973579954:web:45c60b002f5bccaab3cdab",
+            measurementId: "G-SGEFL1K4MP"
         };
         
         firebase.initializeApp(firebaseConfig);
@@ -833,7 +843,7 @@
 
             const usernameRegex = /^[a-zA-Z0-9_\-]+$/;
             if (!usernameRegex.test(username)) {
-                showToast("Логин может содержать только латинские буквы, цифры, подчёркивание и дефис!");
+                showToast("Логин содержит недопустимые символы!");
                 return;
             }
 
@@ -855,6 +865,49 @@
                 showToast("Приглашение сгенерировано!");
             }).catch((err) => {
                 showToast("Ошибка создания приглашения: " + err.message);
+            });
+        }
+
+        function sendInviteSms() {
+            const username = document.getElementById('inviteUsernameInput').value.trim();
+            const phone = document.getElementById('invitePhoneInput').value.trim();
+            
+            if (!username) { showToast("Введите логин родственника!"); return; }
+            if (!phone) { showToast("Введите номер телефона родственника!"); return; }
+            
+            const usernameRegex = /^[a-zA-Z0-9_\-]+$/;
+            if (!usernameRegex.test(username)) {
+                showToast("Логин содержит недопустимые символы!");
+                return;
+            }
+
+            const cleanUsername = username.toLowerCase();
+            const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            const inviteUrl = window.location.origin + window.location.pathname + "?invite=" + token;
+
+            // Запись приглашения в БД
+            database.ref('pillbox/invitations/' + token).set({
+                username: cleanUsername,
+                role: 'relative',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                // Отправка команды таблеточнице для отправки СМС через SIM800L
+                return database.ref('pillbox/commands').set({
+                    action: "send_invite_sms",
+                    phone: phone,
+                    msg: "Inv: " + cleanUsername + " Link: " + inviteUrl,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            }).then(() => {
+                showToast("Команда СМС отправлена на таблеточницу!");
+                const resultDiv = document.getElementById('inviteResult');
+                resultDiv.innerHTML = `
+                    <p style="font-size:13px; color:#555; margin: 8px 0 4px 0;">Приглашение отправлено на ${phone}. Ссылка:</p>
+                    <input type="text" readonly value="${inviteUrl}" id="inviteLinkInput" style="width:100%; padding:10px; margin-bottom:8px; font-size:12px; border:1px solid var(--border-color); border-radius:6px; outline:none;">
+                    <button class="btn btn-sm" onclick="copyInviteLink()">Копировать ссылку</button>
+                `;
+            }).catch((err) => {
+                showToast("Ошибка отправки: " + err.message);
             });
         }
 

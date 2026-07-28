@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
     <style>
         :root {
             --bg-color: #eef5f6; /* Ровный матовый фон */
@@ -320,7 +321,7 @@
             display: flex;
             gap: 10px;
         }
-        input[type="text"], input[type="time"] { 
+        input[type="text"], input[type="time"], input[type="email"], input[type="password"], select { 
             width: 100%; 
             box-sizing: border-box; 
             padding: 14px; 
@@ -333,7 +334,7 @@
             outline: none;
             transition: border-color 0.15s ease;
         }
-        input[type="text"]:focus, input[type="time"]:focus {
+        input[type="text"]:focus, input[type="time"]:focus, input[type="email"]:focus, input[type="password"]:focus, select:focus {
             border-color: var(--primary-color);
         }
         input[type="time"] {
@@ -455,26 +456,32 @@
             border: 1px solid #991b1b;
             box-shadow: 0 6px 20px rgba(127, 29, 29, 0.4);
         }
+
+        /* Кнопки переключения вкладок авторизации */
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #777;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .auth-tab.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
     </style>
 </head>
 <body>
 
-   <!-- ЭКРАН АВТОРИЗАЦИИ -->
-<div id="auth-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#eef5f6; z-index:9999; display:flex; justify-content:center; align-items:center;">
-    <div style="background:white; padding:30px; border-radius:20px; width:300px; box-shadow:0 10px 20px rgba(0,0,0,0.1); text-align:center;">
-        <h2>Вход</h2>
-        <input type="email" id="email" placeholder="Email" style="width:100%; padding:10px; margin:5px 0; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
-        <input type="password" id="password" placeholder="Пароль" style="width:100%; padding:10px; margin:5px 0; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
-        <button onclick="login()" style="width:100%; padding:10px; background:#009688; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">Войти</button>
-        <button onclick="register()" style="width:100%; padding:10px; background:#555; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">Регистрация (Пациент)</button>
-    </div>
-</div>
-
-<!-- НАЧАЛО ОБЕРТКИ ДЛЯ ТВОЕГО КОДА -->
-<div id="main-app" style="display:none;">
-    <!-- СБАЛАНСИРОВАННЫЙ ЗАДНИЙ ФОН: 12 летающих элементов (6 капсул + 6 таблеток) -->
+    <!-- СБАЛАНСИРОВАННЫЙ ЗАДНИЙ ФОН: 12 летающих элементов -->
     <div class="bg-animation">
-        <!-- Летающие капсулы (двухцветные) -->
         <div class="capsule fly-left" style="left: 6%; animation-delay: 0s; animation-duration: 22s;"></div>
         <div class="capsule fly-right" style="left: 21%; animation-delay: 5s; animation-duration: 17s; width: 12px; height: 28px;"></div>
         <div class="capsule fly-left" style="left: 36%; animation-delay: 11s; animation-duration: 25s;"></div>
@@ -482,7 +489,6 @@
         <div class="capsule fly-left" style="left: 71%; animation-delay: 9s; animation-duration: 21s; width: 16px; height: 36px;"></div>
         <div class="capsule fly-right" style="left: 86%; animation-delay: 14s; animation-duration: 18s;"></div>
 
-        <!-- Летающие круглые таблетки (с рисками) -->
         <div class="tablet fly-right" style="left: 13%; animation-delay: 4s; animation-duration: 20s; width: 22px; height: 22px;"></div>
         <div class="tablet fly-left" style="left: 29%; animation-delay: 10s; animation-duration: 24s; width: 18px; height: 18px;"></div>
         <div class="tablet fly-right" style="left: 45%; animation-delay: 1s; animation-duration: 16s; width: 30px; height: 30px;"></div>
@@ -491,13 +497,49 @@
         <div class="tablet fly-left" style="left: 94%; animation-delay: 6s; animation-duration: 15s; width: 24px; height: 24px;"></div>
     </div>
 
-    <div class="container">
+    <!-- === ОКНО АВТОРИЗАЦИИ И РЕГИСТРАЦИИ === -->
+    <div class="container" id="authContainer" style="display: none; max-width: 400px; margin-top: 40px;">
         <header>
-            <h1>Таблеточница v1.5</h1>
-            <!-- Разметка с онлайн-индикатором -->
-            <div class="time-box">
+            <h1>Умная Таблеточница</h1>
+            <div class="time-box">Авторизация в системе</div>
+        </header>
+        
+        <div class="card">
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Вход</div>
+                <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Регистрация</div>
+            </div>
+
+            <!-- Форма входа -->
+            <div id="formLogin" class="input-group">
+                <input type="email" id="loginEmail" placeholder="Email">
+                <input type="password" id="loginPassword" placeholder="Пароль">
+                <button class="btn" onclick="loginUser()">Войти</button>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div id="formRegister" class="input-group" style="display: none;">
+                <input type="email" id="regEmail" placeholder="Email">
+                <input type="password" id="regPassword" placeholder="Пароль">
+                <select id="regRole">
+                    <option value="patient">Пациент (полный доступ)</option>
+                    <option value="relative">Родственник (только мониторинг)</option>
+                </select>
+                <button class="btn" onclick="registerUser()">Зарегистрироваться</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === ОСНОВНОЙ ИНТЕРФЕЙС ПАНЕЛИ === -->
+    <div class="container" id="appContainer" style="display: none;">
+        <header>
+            <h1>Таблеточница v1.5 <span id="roleIndicator" style="font-size:16px; font-weight: normal; color:#5a738e;"></span></h1>
+            <div class="time-box" style="margin-bottom: 8px;">
                 <span class="online-indicator"></span>
                 Время устройства: &nbsp;<span id="time" style="font-weight: bold; color: #222;">--:--:--</span>
+            </div>
+            <div>
+                <button class="btn btn-sm" style="background-color: #5a738e; color: white;" onclick="logoutUser()">Выйти из аккаунта</button>
             </div>
         </header>
 
@@ -592,8 +634,8 @@
             </div>
         </div>
         
-        <!-- ДИНАМИЧЕСКИЕ КОНТАКТЫ -->
-        <div class="card">
+        <!-- ДИНАМИЧЕСКИЕ КОНТАКТЫ (ОТОБРАЖАЕТСЯ ТОЛЬКО ДЛЯ РОЛИ "ПАЦИЕНТ") -->
+        <div class="card" id="contactsCard" style="display: none;">
             <h2 style="margin-bottom: 14px;">Номера контактов</h2>
             <div id="contactsList"></div>
             
@@ -602,6 +644,19 @@
                     <input type="text" id="newPhoneInput" placeholder="+79991234567">
                     <button class="btn btn-sm" id="addContactBtn" onclick="addContact()">Добавить</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- КАРТОЧКА ОТПРАВКИ ПРИГЛАШЕНИЙ РОДСТВЕННИКУ (ОТОБРАЖАЕТСЯ ТОЛЬКО ДЛЯ РОЛИ "ПАЦИЕНТ") -->
+        <div class="card" id="inviteCard" style="display: none;">
+            <h2 style="margin-bottom: 14px;">Пригласить родственника</h2>
+            <div class="input-group">
+                <p style="font-size:13px; color:#555; margin:0;">Создайте уникальную ссылку для вашего родственника, чтобы он мог войти в систему под своей ролью.</p>
+                <div class="input-row">
+                    <input type="email" id="inviteEmailInput" placeholder="Email родственника">
+                    <button class="btn btn-sm" onclick="generateInvite()">Создать</button>
+                </div>
+                <div id="inviteResult" style="margin-top: 8px;"></div>
             </div>
         </div>
     </div>
@@ -618,47 +673,191 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const auth = firebase.auth();
-        const usersRef = database.ref('users');
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('auth-overlay').style.display = 'none';
-                document.getElementById('main-app').style.display = 'block';
-                checkRole(user.uid);
-            } else {
-                document.getElementById('auth-overlay').style.display = 'flex';
-                document.getElementById('main-app').style.display = 'none';
-            }
-        });
 
-        function login() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(e => alert(e.message)); }
-        function register() { 
-            auth.createUserWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value)
-            .then(cred => usersRef.child(cred.user.uid).set({ role: 'patient' })); 
-        }
-
-        function checkRole(uid) {
-            usersRef.child(uid).once('value').then(snap => {
-                const role = snap.val()?.role;
-                // Если родственник, скрываем элементы (примеры классов или ID сам подставь)
-                if (role !== 'patient') {
-                    document.getElementById('addContactForm').style.display = 'none';
-                    document.getElementById('addAlarmForm').style.display = 'none';
-                    document.getElementById('tareBtn').style.display = 'none';
-                }
-            });
-        }
         let currentPhones = [];
         let currentAlarms = [];
         let ignoreIncomingUpdatesUntil = 0;
+        let currentUserRole = "patient"; // По умолчанию
 
         let deviceClockInterval = null;
         let localHour = 0, localMinute = 0, localSecond = 0;
-        let clockInitialized = false; // Флаг инициализации часов
+        let clockInitialized = false; 
         
         let serverTimeOffset = 0; 
         database.ref(".info/serverTimeOffset").on("value", (snap) => {
             serverTimeOffset = snap.val() || 0;
         });
+
+        // === ОБРАБОТЧИК АВТОРИЗАЦИИ ===
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Пользователь вошел. Проверяем роль в БД.
+                database.ref('pillbox/users/' + user.uid).once('value').then((snapshot) => {
+                    const profile = snapshot.val();
+                    if (profile) {
+                        currentUserRole = profile.role || 'patient';
+                        initApp();
+                    } else {
+                        // Если профиля нет (первый вход), создаем как пациента
+                        currentUserRole = 'patient';
+                        database.ref('pillbox/users/' + user.uid).set({
+                            email: user.email,
+                            role: 'patient'
+                        }).then(() => {
+                            initApp();
+                        });
+                    }
+                });
+            } else {
+                // Пользователь не авторизован. Показываем форму авторизации.
+                document.getElementById('authContainer').style.display = 'block';
+                document.getElementById('appContainer').style.display = 'none';
+                checkUrlInvitations(); // Проверяем, осуществлен ли переход по приглашению
+            }
+        });
+
+        function initApp() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+
+            const roleIndicator = document.getElementById('roleIndicator');
+            const contactsCard = document.getElementById('contactsCard');
+            const inviteCard = document.getElementById('inviteCard');
+
+            if (currentUserRole === 'relative') {
+                roleIndicator.innerText = "(Родственник)";
+                contactsCard.style.display = 'none';
+                inviteCard.style.display = 'none';
+            } else {
+                roleIndicator.innerText = "(Пациент)";
+                contactsCard.style.display = 'block';
+                inviteCard.style.display = 'block';
+            }
+
+            startDatabaseListeners();
+        }
+
+        // === ФУНКЦИИ AUTH ===
+        function switchAuthTab(tab) {
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+            const formLogin = document.getElementById('formLogin');
+            const formRegister = document.getElementById('formRegister');
+
+            if (tab === 'login') {
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                formLogin.style.display = 'flex';
+                formRegister.style.display = 'none';
+            } else {
+                tabLogin.classList.remove('active');
+                tabRegister.classList.add('active');
+                formLogin.style.display = 'none';
+                formRegister.style.display = 'flex';
+            }
+        }
+
+        function loginUser() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+
+            if (!email || !pass) { showToast("Заполните все поля!"); return; }
+
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(() => {
+                    showToast("Успешный вход!");
+                })
+                .catch((err) => {
+                    showToast("Ошибка входа: " + err.message);
+                });
+        }
+
+        function registerUser() {
+            const email = document.getElementById('regEmail').value.trim();
+            const pass = document.getElementById('regPassword').value;
+            const role = document.getElementById('regRole').value;
+
+            if (!email || !pass) { showToast("Заполните все поля!"); return; }
+            if (pass.length < 6) { showToast("Пароль должен быть не менее 6 символов!"); return; }
+
+            auth.createUserWithEmailAndPassword(email, pass)
+                .then((cred) => {
+                    // Записываем данные роли в БД
+                    return database.ref('pillbox/users/' + cred.user.uid).set({
+                        email: email,
+                        role: role
+                    });
+                })
+                .then(() => {
+                    showToast("Регистрация успешна!");
+                })
+                .catch((err) => {
+                    showToast("Ошибка регистрации: " + err.message);
+                });
+        }
+
+        function logoutUser() {
+            auth.signOut().then(() => {
+                showToast("Вы вышли из аккаунта");
+                // Сброс адресной строки от токенов
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
+
+        // === СИСТЕМА ПРИГЛАШЕНИЙ ===
+        function generateInvite() {
+            const email = document.getElementById('inviteEmailInput').value.trim();
+            if (!email) { showToast("Введите email родственника!"); return; }
+
+            // Генерируем случайный токен ссылки
+            const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            const inviteUrl = window.location.origin + window.location.pathname + "?invite=" + token;
+
+            database.ref('pillbox/invitations/' + token).set({
+                email: email,
+                role: 'relative',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                const resultDiv = document.getElementById('inviteResult');
+                resultDiv.innerHTML = `
+                    <p style="font-size:13px; color:#555; margin: 8px 0 4px 0;">Ссылка для регистрации родственника:</p>
+                    <input type="text" readonly value="${inviteUrl}" id="inviteLinkInput" style="width:100%; padding:10px; margin-bottom:8px; font-size:12px; border:1.5px solid var(--border-color); border-radius:6px; outline:none;">
+                    <button class="btn btn-sm" onclick="copyInviteLink()">Копировать ссылку</button>
+                `;
+                showToast("Приглашение сгенерировано!");
+            }).catch((err) => {
+                showToast("Ошибка создания приглашения: " + err.message);
+            });
+        }
+
+        function copyInviteLink() {
+            const copyText = document.getElementById("inviteLinkInput");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            showToast("Ссылка скопирована!");
+        }
+
+        function checkUrlInvitations() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const inviteToken = urlParams.get('invite');
+            if (inviteToken) {
+                database.ref('pillbox/invitations/' + inviteToken).once('value').then((snap) => {
+                    const inviteData = snap.val();
+                    if (inviteData) {
+                        switchAuthTab('register');
+                        document.getElementById('regEmail').value = inviteData.email;
+                        document.getElementById('regRole').value = 'relative';
+                        document.getElementById('regRole').disabled = true; // Блокируем изменение роли
+                        showToast("Приглашение принято! Пожалуйста, придумайте пароль.");
+                    } else {
+                        showToast("Ссылка приглашения недействительна или устарела.");
+                    }
+                });
+            }
+        }
+
+        // === ИСХОДНЫЙ ФУНКЦИОНАЛ МОНИТОРИНГА И УПРАВЛЕНИЯ ===
 
         function showToast(msg) {
             let toast = document.getElementById("toast");
@@ -666,7 +865,6 @@
             setTimeout(() => { toast.className = ""; }, 2500);
         }
 
-        // Функция спойлера
         function toggleCollapse(contentId, chevronId) {
             const content = document.getElementById(contentId);
             const chevron = document.getElementById(chevronId);
@@ -679,7 +877,6 @@
             }
         }
 
-        // Плавный непрерывный таймер времени устройства (без постоянного пересоздания интервала)
         setInterval(() => {
             if (!clockInitialized) return;
             localSecond++;
@@ -715,11 +912,9 @@
                 second = totalSeconds % 60;
             }
 
-            // Вычисляем общее количество секунд для проверки расхождения
             const currentLocalTotalSec = localHour * 3600 + localMinute * 60 + localSecond;
             const incomingTotalSec = hour * 3600 + minute * 60 + second;
 
-            // Корректируем часы только если они не инициализированы или если рассинхронизация более 2 секунд
             if (!clockInitialized || Math.abs(currentLocalTotalSec - incomingTotalSec) > 2) {
                 localHour = hour;
                 localMinute = minute;
@@ -736,104 +931,107 @@
             document.getElementById('time').innerText = `${hStr}:${mStr}:${sStr}`;
         }
 
-        // Получение статуса в реальном времени
-        database.ref('pillbox/status').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
+        function startDatabaseListeners() {
+            database.ref('pillbox/status').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
 
-            document.getElementById('weight').innerText = (data.weight || 0).toFixed(2) + ' г';
-            
-            if (data.time) {
-                syncLocalClock(data.time, data.lastUpdate);
-            } else {
-                document.getElementById('time').innerText = '--:--:--';
-            }
-
-            // Многоуровневое управление отображением предупреждающего баннера
-            const warningBanner = document.getElementById('cupWarningBanner');
-            if (data.cupMissing === true) {
-                warningBanner.style.display = 'block';
-                warningBanner.className = 'alert-banner'; // Сброс стилей
+                // Валидация входящего значения веса
+                const rawWeight = data.weight;
+                const validWeight = (typeof rawWeight === 'number' && !isNaN(rawWeight)) ? rawWeight : 0.00;
+                document.getElementById('weight').innerText = validWeight.toFixed(2) + ' г';
                 
-                if (data.cupStage === 1) {
-                    warningBanner.classList.add('banner-stage-1');
-                    warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов более 1 минуты. Пожалуйста, верните ее на место.';
-                } else if (data.cupStage === 2) {
-                    warningBanner.classList.add('banner-stage-2');
-                    warningBanner.innerHTML = '🔊 Внимание! Чаша отсутствует более 3 минут! На таблеточнице включен звуковой сигнал.';
-                } else if (data.cupStage === 3) {
-                    warningBanner.classList.add('banner-stage-3');
-                    warningBanner.innerHTML = '✉️ Критическая ситуация! Чаша отсутствует более 5 минут! Родственникам отправлены тревожные СМС.';
+                if (data.time) {
+                    syncLocalClock(data.time, data.lastUpdate);
                 } else {
-                    warningBanner.classList.add('banner-stage-1');
-                    warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов!';
+                    document.getElementById('time').innerText = '--:--:--';
                 }
-            } else {
-                warningBanner.style.display = 'none';
-            }
 
-            if (Date.now() < ignoreIncomingUpdatesUntil) {
-                return; 
-            }
+                const warningBanner = document.getElementById('cupWarningBanner');
+                if (data.cupMissing === true) {
+                    warningBanner.style.display = 'block';
+                    warningBanner.className = 'alert-banner'; 
+                    
+                    if (data.cupStage === 1) {
+                        warningBanner.classList.add('banner-stage-1');
+                        warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов более 1 минуты. Пожалуйста, верните ее на место.';
+                    } else if (data.cupStage === 2) {
+                        warningBanner.classList.add('banner-stage-2');
+                        warningBanner.innerHTML = '🔊 Внимание! Чаша отсутствует более 3 минут! На таблеточнице включен звуковой сигнал.';
+                    } else if (data.cupStage === 3) {
+                        warningBanner.classList.add('banner-stage-3');
+                        warningBanner.innerHTML = '✉️ Критическая ситуация! Чаша отсутствует более 5 минут! Родственникам отправлены тревожные СМС.';
+                    } else {
+                        warningBanner.classList.add('banner-stage-1');
+                        warningBanner.innerHTML = '⚠️ Внимание! Чаша снята с весов!';
+                    }
+                } else {
+                    warningBanner.style.display = 'none';
+                }
 
-            // Синхронизация переключателей
-            const smsCheckbox = document.getElementById('smsEnabledInput');
-            if (document.activeElement !== smsCheckbox) {
-                smsCheckbox.checked = data.smsEnabled !== undefined ? data.smsEnabled : true;
-            }
-            
-            const bAlmCheckbox = document.getElementById('buzzAlarmInput');
-            if (document.activeElement !== bAlmCheckbox) {
-                bAlmCheckbox.checked = data.buzzAlarm !== undefined ? data.buzzAlarm : true;
-            }
-            
-            const bBtnCheckbox = document.getElementById('buzzButtonsInput');
-            if (document.activeElement !== bBtnCheckbox) {
-                bBtnCheckbox.checked = data.buzzButtons !== undefined ? data.buzzButtons : true;
-            }
-            
-            const bItkCheckbox = document.getElementById('buzzIntakeInput');
-            if (document.activeElement !== bItkCheckbox) {
-                bItkCheckbox.checked = data.buzzIntake !== undefined ? data.buzzIntake : true;
-            }
-            
-            const bTarCheckbox = document.getElementById('buzzTareInput');
-            if (document.activeElement !== bTarCheckbox) {
-                bTarCheckbox.checked = data.buzzTare !== undefined ? data.buzzTare : true;
-            }
+                if (Date.now() < ignoreIncomingUpdatesUntil) {
+                    return; 
+                }
 
-            // 1. Получение телефонов (ОБНОВЛЕНИЕ ТОЛЬКО ПРИ ИЗМЕНЕНИИ ДАННЫХ, чтобы не терять фокус)
-            let newPhones = data.phones || [];
-            if (newPhones.length === 0) {
-                if (data.phone1 && data.phone1 !== '+70000000000') newPhones.push(data.phone1);
-                if (data.phone2 && data.phone2 !== '+70000000000') newPhones.push(data.phone2);
-                if (data.phone3 && data.phone3 !== '+70000000000') newPhones.push(data.phone3);
-            }
-            if (JSON.stringify(newPhones) !== JSON.stringify(currentPhones)) {
-                currentPhones = newPhones;
-                renderContacts();
-            }
+                const smsCheckbox = document.getElementById('smsEnabledInput');
+                if (document.activeElement !== smsCheckbox) {
+                    smsCheckbox.checked = data.smsEnabled !== undefined ? data.smsEnabled : true;
+                }
+                
+                const bAlmCheckbox = document.getElementById('buzzAlarmInput');
+                if (document.activeElement !== bAlmCheckbox) {
+                    bAlmCheckbox.checked = data.buzzAlarm !== undefined ? data.buzzAlarm : true;
+                }
+                
+                const bBtnCheckbox = document.getElementById('buzzButtonsInput');
+                if (document.activeElement !== bBtnCheckbox) {
+                    bBtnCheckbox.checked = data.buzzButtons !== undefined ? data.buzzButtons : true;
+                }
+                
+                const bItkCheckbox = document.getElementById('buzzIntakeInput');
+                if (document.activeElement !== bItkCheckbox) {
+                    bItkCheckbox.checked = data.buzzIntake !== undefined ? data.buzzIntake : true;
+                }
+                
+                const bTarCheckbox = document.getElementById('buzzTareInput');
+                if (document.activeElement !== bTarCheckbox) {
+                    bTarCheckbox.checked = data.buzzTare !== undefined ? data.buzzTare : true;
+                }
 
-            // 2. Получение будильников (ОБНОВЛЕНИЕ ТОЛЬКО ПРИ ИЗМЕНЕНИИ ДАННЫХ, чтобы не терять фокус)
-            let newAlarms = data.alarms || [];
-            if (JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms)) {
-                currentAlarms = newAlarms;
-                renderAlarms();
-            }
+                // 1. Получение телефонов (Отображается только для пациента)
+                if (currentUserRole !== 'relative') {
+                    let newPhones = data.phones || [];
+                    if (newPhones.length === 0) {
+                        if (data.phone1 && data.phone1 !== '+70000000000') newPhones.push(data.phone1);
+                        if (data.phone2 && data.phone2 !== '+70000000000') newPhones.push(data.phone2);
+                        if (data.phone3 && data.phone3 !== '+70000000000') newPhones.push(data.phone3);
+                    }
+                    if (JSON.stringify(newPhones) !== JSON.stringify(currentPhones)) {
+                        currentPhones = newPhones;
+                        renderContacts();
+                    }
+                }
 
-            // 3. Автонапоминание
-            const enabledCheckbox = document.getElementById('remindEnabledInput');
-            if (document.activeElement !== enabledCheckbox) {
-                enabledCheckbox.checked = data.remindEnabled || false;
-                toggleReminderView(false); 
-            }
-            const timeInput = document.getElementById('remindTimeInput');
-            if (document.activeElement !== timeInput) {
-                timeInput.value = data.remindTime || '12:00';
-            }
-        });
+                // 2. Получение будильников
+                let newAlarms = data.alarms || [];
+                if (JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms)) {
+                    currentAlarms = newAlarms;
+                    renderAlarms();
+                }
 
-        // Отправка системной конфигурации на устройство
+                // 3. Автонапоминание
+                const enabledCheckbox = document.getElementById('remindEnabledInput');
+                if (document.activeElement !== enabledCheckbox) {
+                    enabledCheckbox.checked = data.remindEnabled || false;
+                    toggleReminderView(false); 
+                }
+                const timeInput = document.getElementById('remindTimeInput');
+                if (document.activeElement !== timeInput) {
+                    timeInput.value = data.remindTime || '12:00';
+                }
+            });
+        }
+
         function saveDeviceConfig() {
             const smsEnabled = document.getElementById('smsEnabledInput').checked;
             const buzzAlarm = document.getElementById('buzzAlarmInput').checked;
@@ -858,7 +1056,6 @@
             });
         }
 
-        // Отрисовка списка контактов
         function renderContacts() {
             const listDiv = document.getElementById('contactsList');
             listDiv.innerHTML = '';
@@ -874,14 +1071,13 @@
                                 <span class="contact-label">${label}</span>
                                 <span style="font-weight:600; margin-left:12px; font-size:15px;">${phone}</span>
                             </div>
-                            ${currentUserRole === 'patient' ? '<span class="delete-btn" onclick="deleteContact('+idx+')">&times;</span>' : ''}
+                            <span class="delete-btn" onclick="deleteContact(${idx})">&times;</span>
                         </div>
                     `;
                 });
             }
         }
 
-        // Отрисовка списка будильников
         function renderAlarms() {
             const listDiv = document.getElementById('alarmsList');
             listDiv.innerHTML = '';
@@ -899,7 +1095,7 @@
                                 <input type="time" value="${alarm.time}" onchange="editAlarmTime(${idx}, this.value)" style="width: auto; padding: 4px 8px; font-size: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-weight: 600; background: #fff;">
                                 <span class="${statusClass}">${statusText}</span>
                             </div>
-                            ${currentUserRole === 'patient' ? '<span class="delete-btn" onclick="deleteAlarm('+idx+')">&times;</span>' : ''}
+                            <span class="delete-btn" onclick="deleteAlarm(${idx})">&times;</span>
                         </div>
                     `;
                 });
@@ -1068,6 +1264,5 @@
             });
         }
     </script>
-</div> <!-- Закрытие main-app -->
 </body>
 </html>

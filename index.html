@@ -616,39 +616,37 @@
         };
         
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-const usersRef = database.ref('users');
-
-auth.onAuthStateChanged(user => {
-    if (user) {
-        document.getElementById('auth-overlay').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
-        checkRole(user.uid);
-    } else {
-        document.getElementById('auth-overlay').style.display = 'flex';
-        document.getElementById('main-app').style.display = 'none';
-    }
-});
-
-function login() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(e => alert(e.message)); }
-function register() { 
-    auth.createUserWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value)
-    .then(cred => usersRef.child(cred.user.uid).set({ role: 'patient' })); 
-}
-
-function checkRole(uid) {
-    usersRef.child(uid).once('value').then(snap => {
-        const role = snap.val()?.role;
-        // Если родственник, скрываем элементы (примеры классов или ID сам подставь)
-        if (role !== 'patient') {
-            document.getElementById('addContactForm').style.display = 'none';
-            document.getElementById('addAlarmForm').style.display = 'none';
-            document.getElementById('tareBtn').style.display = 'none';
-        }
-    });
-}
         const database = firebase.database();
+        const auth = firebase.auth();
+        const usersRef = database.ref('users');
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                checkRole(user.uid);
+            } else {
+                document.getElementById('auth-overlay').style.display = 'flex';
+                document.getElementById('main-app').style.display = 'none';
+            }
+        });
 
+        function login() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(e => alert(e.message)); }
+        function register() { 
+            auth.createUserWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value)
+            .then(cred => usersRef.child(cred.user.uid).set({ role: 'patient' })); 
+        }
+
+        function checkRole(uid) {
+            usersRef.child(uid).once('value').then(snap => {
+                const role = snap.val()?.role;
+                // Если родственник, скрываем элементы (примеры классов или ID сам подставь)
+                if (role !== 'patient') {
+                    document.getElementById('addContactForm').style.display = 'none';
+                    document.getElementById('addAlarmForm').style.display = 'none';
+                    document.getElementById('tareBtn').style.display = 'none';
+                }
+            });
+        }
         let currentPhones = [];
         let currentAlarms = [];
         let ignoreIncomingUpdatesUntil = 0;
@@ -901,7 +899,7 @@ function checkRole(uid) {
                                 <input type="time" value="${alarm.time}" onchange="editAlarmTime(${idx}, this.value)" style="width: auto; padding: 4px 8px; font-size: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-weight: 600; background: #fff;">
                                 <span class="${statusClass}">${statusText}</span>
                             </div>
-                            ${currentUserRole === 'patient' ? '<span class="delete-btn" onclick="deleteContact('+idx+')">&times;</span>' : ''}
+                            ${currentUserRole === 'patient' ? '<span class="delete-btn" onclick="deleteAlarm('+idx+')">&times;</span>' : ''}
                         </div>
                     `;
                 });
